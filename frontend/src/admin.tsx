@@ -171,3 +171,4 @@ export const AdminPanel: React.FC = () => {
       {status && <div style={{marginTop: 16}}>{status}</div>}
     </div>
   );
+}
