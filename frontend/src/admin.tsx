@@ -37,14 +37,14 @@ export const AdminPanel: React.FC = () => {
   useEffect(() => {
     if (!loggedIn) return;
     setLoading(true);
-    fetch(`${getApiUrl()}/lotteries')
+    fetch(`${getApiUrl()}/lotteries`)
       .then(r => r.json())
       .then(setLotteries)
       .catch(() => setError('Ошибка загрузки лотерей'))
       .finally(() => setLoading(false));
     // Polling
     const poll = setInterval(() => {
-      fetch(`${getApiUrl()}/lotteries')
+      fetch(`${getApiUrl()}/lotteries`)
         .then(r => r.json())
         .then(setLotteries);
     }, 3000);
@@ -106,7 +106,7 @@ export const AdminPanel: React.FC = () => {
     e.preventDefault();
     setStatus(null);
     try {
-      const res = await fetch(`${getApiUrl()}/lotteries/add', {
+      const res = await fetch(`${getApiUrl()}/lotteries/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -171,4 +171,3 @@ export const AdminPanel: React.FC = () => {
       {status && <div style={{marginTop: 16}}>{status}</div>}
     </div>
   );
-};
