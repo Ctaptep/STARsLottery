@@ -1,0 +1,21 @@
+# Node.js
+node_modules/
+
+# Python
+__pycache__/
+.env
+*.pyc
+*.pyo
+*.pyd
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vite
+/dist
+
+# IDE
+.vscode/
+.idea/
+*.swp

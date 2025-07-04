@@ -1,0 +1,36 @@
+.ticket-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(32px, 1fr));
+  gap: 4px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 4px;
+  background: rgba(44,54,101,0.05);
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.ticket-grid-mobile {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 4px;
+  background: rgba(44,54,101,0.05);
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 500px) {
+  .ticket-grid {
+    grid-template-columns: repeat(10, 1fr) !important;
+  }
+}
+
+.ticket-selected {
+  background: #42e57b !important;
+  color: #fff !important;
+  border: 1.5px solid #23c16b !important;
+  box-shadow: 0 0 0 2px #23c16b33;
+}
