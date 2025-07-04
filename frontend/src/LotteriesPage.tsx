@@ -2,6 +2,17 @@ import React, { useEffect, useState } from 'react';
 import './ticketGrid.css';
 import { tonConnect } from './tonConnect';
 
+interface ImportMetaEnv {
+  readonly VITE_API_URL?: string;
+}
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+
+function getApiUrl() {
+  return import.meta.env.VITE_API_URL || 'http://localhost:8000';
+}
+
 type Lottery = {
   id: number;
   name: string;
@@ -36,7 +47,7 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
       if (wallet && wallet.account.address) {
         setUserWallet(wallet.account.address);
         // Сохраняем адрес на backend
-        await fetch(`http://localhost:8000/users/${userId}/wallet`, {
+        await fetch(`${getApiUrl()}/users/${userId}/wallet`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ton_wallet_address: wallet.account.address })
@@ -68,7 +79,7 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
   useEffect(() => {
     // Получить кошелек пользователя
     setWalletLoading(true);
-    fetch(`http://localhost:8000/users/${userId}`)
+    fetch(`${getApiUrl()}/users/${userId}`)
       .then(r => r.json())
       .then(user => {
         setUserWallet(user.ton_wallet_address || null);
@@ -79,7 +90,7 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
         setUserWallet(null);
         setWalletLoading(false);
       });
-    fetch('http://localhost:8000/lotteries')
+    fetch(`${getApiUrl()}/lotteries`)
       .then(r => r.json())
       .then(setLotteries)
       .catch(() => setError('Ошибка загрузки лотерей'))
@@ -92,21 +103,21 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
   }, [userId]);
 
   const reload = () => {
-    fetch('http://localhost:8000/lotteries')
+    fetch(`${getApiUrl()}/lotteries`)
       .then(r => r.json())
       .then(setLotteries);
     if (selected) fetchTickets(selected);
   };
 
   const fetchTickets = async (lotteryId:number) => {
-    const res = await fetch(`http://localhost:8000/tickets?lottery_id=${lotteryId}`);
+    const res = await fetch(`${getApiUrl()}/tickets?lottery_id=${lotteryId}`);
     setTickets(await res.json());
   };
 
   const handleBuy = async (lotteryId: number, ticketNumbers: number[]) => {
     setBuyStatus(null);
     try {
-      const res = await fetch(`http://localhost:8000/lotteries/${lotteryId}/buy`, {
+      const res = await fetch(`${getApiUrl()}/lotteries/${lotteryId}/buy`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

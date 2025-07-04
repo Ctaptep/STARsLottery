@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react';
 
+function getApiUrl() {
+  return import.meta.env.VITE_API_URL || 'http://localhost:8000';
+}
+
 type Lottery = {
   id: number;
   name: string;
@@ -33,14 +37,14 @@ export const AdminPanel: React.FC = () => {
   useEffect(() => {
     if (!loggedIn) return;
     setLoading(true);
-    fetch('http://localhost:8000/lotteries')
+    fetch(`${getApiUrl()}/lotteries')
       .then(r => r.json())
       .then(setLotteries)
       .catch(() => setError('Ошибка загрузки лотерей'))
       .finally(() => setLoading(false));
     // Polling
     const poll = setInterval(() => {
-      fetch('http://localhost:8000/lotteries')
+      fetch(`${getApiUrl()}/lotteries')
         .then(r => r.json())
         .then(setLotteries);
     }, 3000);
@@ -55,17 +59,17 @@ export const AdminPanel: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('Удалить лотерею?')) return;
-    await fetch(`http://localhost:8000/lotteries/${id}`, { method: 'DELETE' });
+    await fetch(`${getApiUrl()}/lotteries/${id}`, { method: 'DELETE' });
     refresh();
   };
 
   const handleDraw = async (id: number) => {
-    await fetch(`http://localhost:8000/lotteries/${id}/draw`, { method: 'POST' });
+    await fetch(`${getApiUrl()}/lotteries/${id}/draw`, { method: 'POST' });
     refresh();
   };
 
   const handleStats = async (id: number) => {
-    const res = await fetch(`http://localhost:8000/lotteries/${id}/stats`);
+    const res = await fetch(`${getApiUrl()}/lotteries/${id}/stats`);
     const data = await res.json();
     alert(`Продано: ${data.tickets_sold}\nВыручка: ${data.revenue}₽`);
   };
@@ -76,9 +80,9 @@ export const AdminPanel: React.FC = () => {
     setSelectedLot(id);
     // загрузка билетов и статистики
     const [ticketsRes, statsRes, resultRes] = await Promise.all([
-      fetch(`http://localhost:8000/tickets?lottery_id=${id}`),
-      fetch(`http://localhost:8000/lotteries/${id}/stats`),
-      fetch(`http://localhost:8000/lotteries/${id}/result`)
+      fetch(`${getApiUrl()}/tickets?lottery_id=${id}`),
+      fetch(`${getApiUrl()}/lotteries/${id}/stats`),
+      fetch(`${getApiUrl()}/lotteries/${id}/result`)
     ]);
     setTickets(await ticketsRes.json());
     const stats = await statsRes.json();
@@ -102,7 +106,7 @@ export const AdminPanel: React.FC = () => {
     e.preventDefault();
     setStatus(null);
     try {
-      const res = await fetch('http://localhost:8000/lotteries/add', {
+      const res = await fetch(`${getApiUrl()}/lotteries/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
