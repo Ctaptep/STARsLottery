@@ -37,10 +37,12 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
   const [userWallet, setUserWallet] = useState<string | null>(null);
   const [walletLoading, setWalletLoading] = useState(false);
   const [walletInput, setWalletInput] = useState<string>('');
+  const [showWalletLink, setShowWalletLink] = useState(false);
 
   // Подключение TON-кошелька через Telegram
   async function connectTonWallet() {
     setWalletLoading(true);
+    setShowWalletLink(false);
     console.log('[TON] connectTonWallet called');
     try {
       const connectResult = await tonConnect.connect([]);
@@ -58,16 +60,17 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
         alert('TON-кошелек успешно подключён и сохранён!');
       } else {
         console.error('[TON] Wallet/account/address is missing:', wallet);
-        alert('TON Connect не вернул адрес кошелька. Проверьте, установлен ли кошелёк TON в Telegram.');
+        setShowWalletLink(true);
+        alert('TON Connect не вернул адрес кошелька. Нажмите "Открыть TON Wallet" для создания/подключения кошелька. После этого вернитесь и повторите попытку.');
       }
     } catch (e) {
       console.error('[TON] Ошибка подключения:', e);
-      alert('Не удалось подключить TON-кошелек через Telegram');
+      setShowWalletLink(true);
+      alert('Не удалось подключить TON-кошелек через Telegram. Нажмите "Открыть TON Wallet" для создания/подключения кошелька. После этого вернитесь и повторите попытку.');
     } finally {
       setWalletLoading(false);
     }
   }
-
 
   // Получаем user info из Telegram WebApp initData
   // Получаем user info из Telegram WebApp initData
@@ -219,9 +222,19 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
         <div style={{background:'#fff',borderRadius:20,padding:'32px 24px',maxWidth:360,width:'100%',boxShadow:'0 8px 32px #232C5140',textAlign:'center'}}>
           <div style={{fontWeight:700,fontSize:24,color:'#244',marginBottom:8}}>Привяжите TON-кошелёк</div>
           <div style={{fontSize:15,marginBottom:16,color:'#444'}}>Для получения выигрыша подключите свой TON Wallet через Telegram.<br/>Вы всегда сможете изменить его позже.</div>
-          <button className="btn btn-primary w-100" style={{fontWeight:700,fontSize:18}} onClick={connectTonWallet} disabled={walletLoading}>
-            {walletLoading ? 'Ожидание кошелька...' : 'Подключить TON-кошелек через Telegram'}
+          <button className="btn btn-primary" onClick={connectTonWallet} disabled={walletLoading}>
+            {walletLoading ? 'Подключение...' : 'Подключить TON-кошелек через Telegram'}
           </button>
+          {showWalletLink && (
+            <button
+              className="btn btn-outline-secondary ms-2"
+              onClick={() => {
+                window.open('https://t.me/wallet', '_blank');
+              }}
+            >
+              Открыть TON Wallet
+            </button>
+          )}
         </div>
       </div>
     );
