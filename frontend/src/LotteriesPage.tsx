@@ -41,20 +41,27 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
   // Подключение TON-кошелька через Telegram
   async function connectTonWallet() {
     setWalletLoading(true);
+    console.log('[TON] connectTonWallet called');
     try {
-      await tonConnect.connect({ jsBridgeKey: 'tonconnect' }); // Для Telegram Mini App universalLink не нужен
+      const connectResult = await tonConnect.connect([]);
+      console.log('[TON] connect() result:', connectResult);
       const wallet = tonConnect.wallet;
-      if (wallet && wallet.account.address) {
+      console.log('[TON] tonConnect.wallet:', wallet);
+      if (wallet && wallet.account && wallet.account.address) {
         setUserWallet(wallet.account.address);
-        // Сохраняем адрес на backend
+        console.log('[TON] Saving wallet to backend:', wallet.account.address);
         await fetch(`${getApiUrl()}/users/${userId}/wallet`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ton_wallet_address: wallet.account.address })
         });
         alert('TON-кошелек успешно подключён и сохранён!');
+      } else {
+        console.error('[TON] Wallet/account/address is missing:', wallet);
+        alert('TON Connect не вернул адрес кошелька. Проверьте, установлен ли кошелёк TON в Telegram.');
       }
     } catch (e) {
+      console.error('[TON] Ошибка подключения:', e);
       alert('Не удалось подключить TON-кошелек через Telegram');
     } finally {
       setWalletLoading(false);
