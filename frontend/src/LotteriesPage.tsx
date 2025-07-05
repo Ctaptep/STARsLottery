@@ -44,29 +44,61 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
     setWalletLoading(true);
     setShowWalletLink(false);
     console.log('[TON] connectTonWallet called');
+    
     try {
-      const connectResult = await tonConnect.connect([]);
-      console.log('[TON] connect() result:', connectResult);
+      console.log('[TON] Starting connection...');
+      
+      // First try to restore connection if it exists
+      const isConnected = await tonConnect.connected;
+      console.log('[TON] Already connected:', isConnected);
+      
+      // If not connected, initiate new connection
+      if (!isConnected) {
+        console.log('[TON] Initiating new connection...');
+        const connectResult = await tonConnect.connect({
+          jsBridgeKey: 'tonconnect',
+          universalLink: 'https://ton-connect.github.io/universal-link-demo/'
+        });
+        console.log('[TON] connect() result:', connectResult);
+      }
+      
+      // Get wallet state
       const wallet = tonConnect.wallet;
       console.log('[TON] tonConnect.wallet:', wallet);
-      if (wallet && wallet.account && wallet.account.address) {
-        setUserWallet(wallet.account.address);
-        console.log('[TON] Saving wallet to backend:', wallet.account.address);
-        await fetch(`${getApiUrl()}/users/${userId}/wallet`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ton_wallet_address: wallet.account.address })
-        });
-        alert('TON-кошелек успешно подключён и сохранён!');
+      
+      if (wallet?.account?.address) {
+        const walletAddress = wallet.account.address;
+        console.log('[TON] Wallet connected, address:', walletAddress);
+        setUserWallet(walletAddress);
+        
+        // Save to backend
+        try {
+          console.log('[TON] Saving wallet to backend...');
+          const response = await fetch(`${getApiUrl()}/users/${userId}/wallet`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ton_wallet_address: walletAddress })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Backend error: ${response.status} ${response.statusText}`);
+          }
+          
+          console.log('[TON] Wallet saved successfully');
+          alert('TON-кошелек успешно подключён и сохранён!');
+        } catch (e) {
+          console.error('[TON] Error saving wallet to backend:', e);
+          alert('Ошибка при сохранении кошелька. Пожалуйста, попробуйте ещё раз.');
+        }
       } else {
-        console.error('[TON] Wallet/account/address is missing:', wallet);
+        console.error('[TON] Wallet connection incomplete. Wallet state:', wallet);
         setShowWalletLink(true);
-        alert('TON Connect не вернул адрес кошелька. Нажмите "Открыть TON Wallet" для создания/подключения кошелька. После этого вернитесь и повторите попытку.');
+        alert('Не удалось получить адрес кошелька. Убедитесь, что вы авторизовались в кошельке и повторите попытку.');
       }
     } catch (e) {
-      console.error('[TON] Ошибка подключения:', e);
+      console.error('[TON] Connection error:', e);
       setShowWalletLink(true);
-      alert('Не удалось подключить TON-кошелек через Telegram. Нажмите "Открыть TON Wallet" для создания/подключения кошелька. После этого вернитесь и повторите попытку.');
+      alert('Ошибка подключения к кошельку. Пожалуйста, убедитесь, что у вас установлен TON Wallet и повторите попытку.');
     } finally {
       setWalletLoading(false);
     }
