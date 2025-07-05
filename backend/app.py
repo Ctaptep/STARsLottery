@@ -16,19 +16,6 @@ app = FastAPI()
 
 from fastapi.middleware.cors import CORSMiddleware
 
-@app.post("/users/{user_id}/wallet")
-def set_wallet(user_id: int, payload: dict = Body(...), db: Session = Depends(lambda: SessionLocal())):
-    user = db.query(User).filter(User.user_id == user_id).first()
-    if not user:
-        # Автоматически создать пользователя, если его нет
-        user = User(user_id=user_id)
-        db.add(user)
-    wallet = payload.get("ton_wallet_address")
-    if not wallet:
-        raise HTTPException(400, detail="No wallet provided")
-    user.ton_wallet_address = wallet
-    db.commit()
-    return {"ok": True, "ton_wallet_address": wallet}
 
 @app.get("/users/{user_id}")
 def get_user(user_id: int, db: Session = Depends(lambda: SessionLocal())):
