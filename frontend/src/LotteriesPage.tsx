@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './ticketGrid.css';
-import { tonConnect } from './tonConnect';
+import { tonConnect, getWalletFromTelegram } from './tonConnect';
 
 interface ImportMetaEnv {
   readonly VITE_API_URL?: string;
@@ -48,22 +48,12 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
     try {
       console.log('[TON] Starting Telegram Wallet connection...');
       
-      // For Telegram Mini App, we need to use the Telegram WebApp provider
-      const connectResult = await tonConnect.connect({
-        jsBridgeKey: 'telegram',
-        universalLink: 'https://app.tonkeeper.com/ton-connect',
-        bridgeUrl: 'https://bridge.tonapi.io/bridge'
-      });
+      // First, try to get wallet from Telegram WebApp
+      const telegramWallet = await getWalletFromTelegram();
       
-      console.log('[TON] connect() result:', connectResult);
-      
-      // Get wallet state
-      const wallet = tonConnect.wallet;
-      console.log('[TON] tonConnect.wallet:', wallet);
-      
-      if (wallet?.account?.address) {
-        const walletAddress = wallet.account.address;
-        console.log('[TON] Telegram Wallet connected, address:', walletAddress);
+      if (telegramWallet) {
+        console.log('[TON] Found wallet in Telegram WebApp:', telegramWallet);
+        const walletAddress = telegramWallet.account.address;
         setUserWallet(walletAddress);
         
         // Save to backend
@@ -81,20 +71,32 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
           
           console.log('[TON] Wallet saved successfully');
           alert('TON-кошелек успешно подключён и сохранён!');
+          return;
         } catch (e) {
           console.error('[TON] Error saving wallet to backend:', e);
           alert('Ошибка при сохранении кошелька. Пожалуйста, попробуйте ещё раз.');
+          return;
         }
-      } else {
-        console.error('[TON] Wallet connection incomplete. Wallet state:', wallet);
-        // Show fallback option to open Telegram Wallet directly
-        setShowWalletLink(true);
-        alert('Не удалось подключить TON-кошелёк. Пожалуйста, нажмите "Открыть TON Wallet" для настройки кошелька.');
       }
+      
+      // If wallet not found in WebApp, try to open it
+      console.log('[TON] Wallet not found in WebApp, trying to open...');
+      
+      // Open Telegram Wallet
+      if (window.Telegram?.WebApp?.openTelegramLink) {
+        window.Telegram.WebApp.openTelegramLink('https://t.me/wallet');
+      } else {
+        window.open('https://t.me/wallet', '_blank');
+      }
+      
+      // Show message to user
+      setShowWalletLink(true);
+      alert('Пожалуйста, создайте или разблокируйте кошелек в открывшемся окне, затем вернитесь и нажмите "Подключить TON-кошелёк" снова.');
+      
     } catch (e) {
       console.error('[TON] Connection error:', e);
       setShowWalletLink(true);
-      alert('Ошибка подключения к TON-кошельку. Пожалуйста, нажмите "Открыть TON Wallet" для настройки кошелька.');
+      alert('Ошибка подключения к TON-кошельку. Пожалуйста, попробуйте ещё раз.');
     } finally {
       setWalletLoading(false);
     }
