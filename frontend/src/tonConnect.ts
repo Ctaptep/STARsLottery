@@ -1,6 +1,6 @@
 import { TonConnect } from '@tonconnect/sdk';
 
-// Initialize with proper configuration for Telegram Mini App
+// Configuration for Telegram Mini App
 export const tonConnect = new TonConnect({
   manifestUrl: 'https://starslottery-fronend-production.up.railway.app/tonconnect-manifest.json'
 });
@@ -9,7 +9,12 @@ export const tonConnect = new TonConnect({
 tonConnect.onStatusChange((wallet) => {
   console.log('[TON] Connection status changed:', wallet ? 'connected' : 'disconnected');
   console.log('[TON] Wallet details:', wallet);
+  
+  // Force UI update when wallet connection changes
+  if (window.dispatchEvent) {
+    window.dispatchEvent(new Event('tonconnect_ui_update_needed'));
+  }
 });
 
 // Log initial connection state
-console.log('[TON] TON Connect initialized');
+console.log('[TON] TON Connect initialized for Telegram Mini App');

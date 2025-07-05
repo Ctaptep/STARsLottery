@@ -46,21 +46,16 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
     console.log('[TON] connectTonWallet called');
     
     try {
-      console.log('[TON] Starting connection...');
+      console.log('[TON] Starting Telegram Wallet connection...');
       
-      // First try to restore connection if it exists
-      const isConnected = await tonConnect.connected;
-      console.log('[TON] Already connected:', isConnected);
+      // For Telegram Mini App, we need to use the Telegram WebApp provider
+      const connectResult = await tonConnect.connect({
+        jsBridgeKey: 'telegram',
+        universalLink: 'https://app.tonkeeper.com/ton-connect',
+        bridgeUrl: 'https://bridge.tonapi.io/bridge'
+      });
       
-      // If not connected, initiate new connection
-      if (!isConnected) {
-        console.log('[TON] Initiating new connection...');
-        const connectResult = await tonConnect.connect({
-          jsBridgeKey: 'tonconnect',
-          universalLink: 'https://ton-connect.github.io/universal-link-demo/'
-        });
-        console.log('[TON] connect() result:', connectResult);
-      }
+      console.log('[TON] connect() result:', connectResult);
       
       // Get wallet state
       const wallet = tonConnect.wallet;
@@ -68,7 +63,7 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
       
       if (wallet?.account?.address) {
         const walletAddress = wallet.account.address;
-        console.log('[TON] Wallet connected, address:', walletAddress);
+        console.log('[TON] Telegram Wallet connected, address:', walletAddress);
         setUserWallet(walletAddress);
         
         // Save to backend
@@ -92,13 +87,14 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
         }
       } else {
         console.error('[TON] Wallet connection incomplete. Wallet state:', wallet);
+        // Show fallback option to open Telegram Wallet directly
         setShowWalletLink(true);
-        alert('Не удалось получить адрес кошелька. Убедитесь, что вы авторизовались в кошельке и повторите попытку.');
+        alert('Не удалось подключить TON-кошелёк. Пожалуйста, нажмите "Открыть TON Wallet" для настройки кошелька.');
       }
     } catch (e) {
       console.error('[TON] Connection error:', e);
       setShowWalletLink(true);
-      alert('Ошибка подключения к кошельку. Пожалуйста, убедитесь, что у вас установлен TON Wallet и повторите попытку.');
+      alert('Ошибка подключения к TON-кошельку. Пожалуйста, нажмите "Открыть TON Wallet" для настройки кошелька.');
     } finally {
       setWalletLoading(false);
     }
