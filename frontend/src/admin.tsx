@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 function getApiUrl() {
-  return import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  return import.meta.env.VITE_API_URL || 'https://starslottery-backend-production.up.railway.app';
 }
 
 type Lottery = {
