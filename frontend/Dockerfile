@@ -7,10 +7,10 @@ RUN npm install -g pnpm
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json ./
 
-# Install deps using pnpm
-RUN pnpm install --frozen-lockfile
+# Install deps using pnpm (without frozen-lockfile to generate it if missing)
+RUN if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else pnpm install; fi
 
 # Copy source
 COPY . .
