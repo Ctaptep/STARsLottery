@@ -18,7 +18,6 @@ COPY . .
 # Build the app
 RUN pnpm run build
 
-ENV PORT 8080
 EXPOSE $PORT
 
 # Start the app
