@@ -4,6 +4,9 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './src/App';
 import { AdminPanel } from './src/admin';
+import { TonConnectUIProvider } from '@tonconnect/ui-react';
+
+const manifestUrl = 'https://starslottery-fronend-production.up.railway.app/tonconnect-manifest.json';
 
 const isAdmin = window.location.pathname.startsWith('/admin');
 
@@ -17,9 +20,11 @@ if (!isAdmin) {
 const root = document.getElementById('root');
 if (root) {
   ReactDOM.createRoot(root).render(
-    React.createElement(React.StrictMode, null,
-      isAdmin ? React.createElement(AdminPanel) : React.createElement(App, { userId })
-    )
+    <React.StrictMode>
+      <TonConnectUIProvider manifestUrl={manifestUrl}>
+        {isAdmin ? <AdminPanel /> : <App userId={userId?.toString() ?? null} />}
+      </TonConnectUIProvider>
+    </React.StrictMode>
   );
 }
 

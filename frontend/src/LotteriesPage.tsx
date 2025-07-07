@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import './ticketGrid.css';
-import { tonConnect, isTelegramInitialized, getWalletFromTelegram } from './tonConnect';
+import { TonConnectButton, useTonWallet } from '@tonconnect/ui-react';
+import { toUserFriendlyAddress } from '@tonconnect/sdk';
 
 interface Lottery {
   id: string;
@@ -56,129 +57,30 @@ export const LotteriesPage: React.FC<{ userId: string }> = ({ userId }) => {
   const [buyStatus, setBuyStatus] = useState<BuyStatus>({ status: 'idle' });
   const [showWalletLink, setShowWalletLink] = useState<boolean>(false);
 
-  const connectTonWallet = useCallback(async () => {
-    if (!isTelegramInitialized) {
-      console.error('[TON] Telegram WebApp is not initialized');
-      alert('Telegram WebApp не инициализирован. Пожалуйста, откройте приложение через Telegram.');
-      return;
-    }
-
-    try {
-      setWalletLoading(true);
-      console.log('[TON] Starting TON wallet connection...');
-      
-      // Check if already connected
-      if (tonConnect.connected && tonConnect.wallet?.account?.address) {
-        console.log('[TON] Already connected to wallet');
-        await handleWalletConnected(tonConnect.wallet);
-        return;
-      }
-
-      console.log('[TON] Requesting wallet connection...');
-      
-      try {
-        // First try to get wallet from Telegram
-        const telegramWallet = await getWalletFromTelegram();
-        if (telegramWallet?.account?.address) {
-          console.log('[TON] Found wallet in Telegram WebApp');
-          await handleWalletConnected(telegramWallet);
-          return;
-        }
-
-        // If no wallet found, try to open Telegram Wallet
-        console.log('[TON] No wallet found, opening Telegram Wallet...');
-                // Open the wallet using Telegram WebApp API if available
-        const tg = window.Telegram?.WebApp;
-        if (tg) {
-          try {
-            // Try to use openTelegramLink if available
-            if ('openTelegramLink' in tg && typeof tg.openTelegramLink === 'function') {
-              (tg as any).openTelegramLink('https://t.me/wallet');
-            } else if ('openTelegramApp' in tg && typeof (tg as any).openTelegramApp === 'function') {
-              // Fallback to openTelegramApp if available
-              (tg as any).openTelegramApp('https://t.me/wallet');
-            } else if ('openLink' in tg && typeof (tg as any).openLink === 'function') {
-              // Fallback to openLink if available
-              (tg as any).openLink('https://t.me/wallet');
-            } else {
-              // Fallback to window.open
-              window.open('https://t.me/wallet', '_blank');
-            }
-          } catch (e) {
-            console.error('Error opening Telegram wallet:', e);
-            window.open('https://t.me/wallet', '_blank');
-          }
-        } else {
-          // Fallback to window.open if Telegram WebApp is not available
-          window.open('https://t.me/wallet', '_blank');
-        }
-        
-        // Show message to user
-        setShowWalletLink(true);
-        alert('Пожалуйста, создайте или разблокируйте кошелек в открывшемся окне, затем вернитесь и нажмите "Подключить TON-кошелёк" снова.');
-        
-      } catch (error) {
-        console.error('[TON] Error during wallet connection:', error);
-        alert(`Ошибка подключения: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
-      }
-      
-    } catch (error) {
-      console.error('[TON] Error in connectTonWallet:', error);
-      alert(`Ошибка подключения: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
-    } finally {
-      setWalletLoading(false);
-    }
-  }, [userId]);
-
-  const handleWalletConnected = useCallback(async (wallet: any) => {
-    try {
-      if (!wallet?.account?.address) {
-        throw new Error('Не удалось получить адрес кошелька');
-      }
-      
-      const walletAddress = wallet.account.address;
-      console.log('[TON] Wallet connected:', walletAddress);
-      setUserWallet(walletAddress);
-      
-      // Save to backend
-      console.log('[TON] Saving wallet to backend...');
-      const response = await fetch(`${getApiUrl()}/users/${userId}/wallet`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ton_wallet_address: walletAddress })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Ошибка сервера: ${response.status} ${response.statusText}`);
-      }
-      
-      console.log('[TON] Wallet saved successfully');
-      alert('TON-кошелек успешно подключён и сохранён!');
-      
-    } catch (e: any) {
-      console.error('[TON] Error handling wallet connection:', e);
-      alert(e.message || 'Произошла ошибка при подключении кошелька');
-      throw e;
-    }
-  }, [userId]);
+  const wallet = useTonWallet();
 
   useEffect(() => {
-    const unsubscribe = tonConnect.onStatusChange((wallet) => {
-      console.log('[TON] Wallet status changed:', wallet);
-      if (wallet?.account?.address) {
-        handleWalletConnected(wallet).catch(console.error);
+    const updateUserWallet = async (address: string) => {
+      if (userId && address) {
+        try {
+          await fetch(`${getApiUrl()}/users/${userId}/wallet`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ton_wallet_address: address })
+          });
+          console.log('Wallet address updated on backend:', address);
+          setUserWallet(address);
+        } catch (error) {
+          console.error('Failed to update wallet address on backend', error);
+        }
       }
-    });
-    
-    // Initial check for connected wallet
-    if (tonConnect.wallet?.account?.address) {
-      handleWalletConnected(tonConnect.wallet).catch(console.error);
-    }
-    
-    return () => {
-      unsubscribe();
     };
-  }, [handleWalletConnected]);
+
+    if (wallet?.account?.address) {
+      const friendlyAddress = toUserFriendlyAddress(wallet.account.address);
+      updateUserWallet(friendlyAddress);
+    }
+  }, [wallet, userId]);
 
   useEffect(() => {
     // Получить кошелек пользователя
@@ -360,23 +262,7 @@ export const LotteriesPage: React.FC<{ userId: string }> = ({ userId }) => {
         <div style={{background:'#fff',borderRadius:20,padding:'32px 24px',maxWidth:360,width:'100%',boxShadow:'0 8px 32px #232C5140',textAlign:'center'}}>
           <div style={{fontWeight:700,fontSize:24,color:'#244',marginBottom:8}}>Привяжите TON-кошелёк</div>
           <div style={{fontSize:15,marginBottom:16,color:'#444'}}>Для получения выигрыша подключите свой TON Wallet через Telegram.<br/>Вы всегда сможете изменить его позже.</div>
-          <button 
-            className={`btn btn-primary ${walletLoading ? 'disabled' : ''}`}
-            onClick={connectTonWallet}
-            disabled={walletLoading}
-          >
-            {walletLoading ? 'Подключение...' : 'Подключить TON-кошелёк'}
-          </button>
-          {showWalletLink && (
-            <button
-              className="btn btn-outline-secondary ms-2"
-              onClick={() => {
-                window.open('https://t.me/wallet', '_blank');
-              }}
-            >
-              Открыть TON Wallet
-            </button>
-          )}
+          <TonConnectButton />
         </div>
       </div>
     );
