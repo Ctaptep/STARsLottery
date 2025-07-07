@@ -9,6 +9,11 @@ export default defineConfig({
     allowedHosts: ['.ngrok-free.app', 'starslottery-fronend-production.up.railway.app'],
     port: 5173,
   },
+  preview: {
+    host: '0.0.0.0',
+    port: Number(process.env.PORT) || 8080,
+    strictPort: true,
+  },
   optimizeDeps: {
     esbuildOptions: {
       define: {
