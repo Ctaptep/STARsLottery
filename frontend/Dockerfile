@@ -18,7 +18,8 @@ COPY . .
 # Build the app
 RUN pnpm run build
 
-EXPOSE 5173
+ENV PORT 8080
+EXPOSE $PORT
 
 # Start the app
-CMD ["pnpm", "run", "preview", "--", "--host"]
+CMD ["sh", "-c", "pnpm run preview -- --host --port $PORT"]

@@ -1,0 +1,13 @@
+{
+  "name": "starslottery-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "postinstall": "cd frontend && pnpm install --frozen-lockfile",
+    "build": "cd frontend && pnpm run build",
+    "start": "cd frontend && pnpm run preview"
+  }
+}
