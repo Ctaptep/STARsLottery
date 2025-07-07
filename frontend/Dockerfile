@@ -21,4 +21,4 @@ RUN pnpm run build
 EXPOSE $PORT
 
 # Start the app
-CMD ["sh", "-c", "pnpm run preview -- --host --port $PORT"]
+CMD ["sh", "-c", "pnpm run preview -- --host 0.0.0.0 --port $PORT"]
