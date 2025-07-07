@@ -1,15 +1,24 @@
 # Frontend Dockerfile for Telegram Lottery
 FROM node:20
 
+# Install pnpm
+RUN npm install -g pnpm
+
 WORKDIR /app
 
-# Install deps
-COPY package.json package-lock.json* pnpm-lock.yaml* ./
-RUN npm install --legacy-peer-deps --silent
+# Copy package files
+COPY package.json pnpm-lock.yaml* ./
+
+# Install deps using pnpm
+RUN pnpm install --frozen-lockfile
 
 # Copy source
 COPY . .
 
+# Build the app
+RUN pnpm run build
+
 EXPOSE 5173
 
-CMD ["npm", "run", "dev", "--", "--host"]
+# Start the app
+CMD ["pnpm", "run", "preview", "--", "--host"]
