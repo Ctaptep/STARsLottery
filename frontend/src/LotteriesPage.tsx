@@ -1,6 +1,36 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import './ticketGrid.css';
-import { tonConnect, getWalletFromTelegram } from './tonConnect';
+import { tonConnect, isTelegramInitialized, getWalletFromTelegram } from './tonConnect';
+
+interface Lottery {
+  id: string;
+  name: string;
+  description: string;
+  ticket_price: number;
+  end_date: string;
+  max_tickets: number;
+  tickets_sold: number;
+  prize_pool: number;
+  image_url: string;
+  ticket_price_currency: string;
+  winner_id?: string | null;
+  winner_username?: string | null;
+  winner_first_name?: string | null;
+  winner_ticket_number?: number | null;
+  random_link?: string | null;
+}
+
+interface Ticket {
+  id: string;
+  number: number;
+  isAvailable: boolean;
+  owner?: string;
+}
+
+interface BuyStatus {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  message?: string;
+}
 
 interface ImportMetaEnv {
   readonly VITE_API_URL?: string;
@@ -9,112 +39,146 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
-function getApiUrl() {
+const getApiUrl = () => {
   return import.meta.env.VITE_API_URL || 'http://localhost:8000';
 }
 
-type Lottery = {
-  id: number;
-  name: string;
-  ticket_price: number;
-  max_tickets: number;
-  tickets_sold: number;
-  winner_id?: number | null;
-  winner_ticket_number?: number | null;
-  random_link?: string | null;
-};
-
-export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
-  const [lotteries, setLotteries] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+export const LotteriesPage: React.FC<{ userId: string }> = ({ userId }) => {
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [buyStatus, setBuyStatus] = useState<string | null>(null);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [tickets, setTickets] = useState<any[]>([]);
+  const [lotteries, setLotteries] = useState<Lottery[]>([]);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
-
-  // --- TON WALLET STATE ---
   const [userWallet, setUserWallet] = useState<string | null>(null);
-  const [walletLoading, setWalletLoading] = useState(false);
+  const [walletLoading, setWalletLoading] = useState<boolean>(false);
   const [walletInput, setWalletInput] = useState<string>('');
-  const [showWalletLink, setShowWalletLink] = useState(false);
+  const [buyStatus, setBuyStatus] = useState<BuyStatus>({ status: 'idle' });
+  const [showWalletLink, setShowWalletLink] = useState<boolean>(false);
 
-  // Подключение TON-кошелька через Telegram
-  async function connectTonWallet() {
-    setWalletLoading(true);
-    setShowWalletLink(false);
-    console.log('[TON] connectTonWallet called');
-    
+  const connectTonWallet = useCallback(async () => {
+    if (!isTelegramInitialized) {
+      console.error('[TON] Telegram WebApp is not initialized');
+      alert('Telegram WebApp не инициализирован. Пожалуйста, откройте приложение через Telegram.');
+      return;
+    }
+
     try {
-      console.log('[TON] Starting Telegram Wallet connection...');
+      setWalletLoading(true);
+      console.log('[TON] Starting TON wallet connection...');
       
-      // First, try to get wallet from Telegram WebApp
-      const telegramWallet = await getWalletFromTelegram();
+      // Check if already connected
+      if (tonConnect.connected && tonConnect.wallet?.account?.address) {
+        console.log('[TON] Already connected to wallet');
+        await handleWalletConnected(tonConnect.wallet);
+        return;
+      }
+
+      console.log('[TON] Requesting wallet connection...');
       
-      if (telegramWallet) {
-        console.log('[TON] Found wallet in Telegram WebApp:', telegramWallet);
-        const walletAddress = telegramWallet.account.address;
-        setUserWallet(walletAddress);
-        
-        // Save to backend
-        try {
-          console.log('[TON] Saving wallet to backend...');
-          const response = await fetch(`${getApiUrl()}/users/${userId}/wallet`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ton_wallet_address: walletAddress })
-          });
-          
-          if (!response.ok) {
-            throw new Error(`Backend error: ${response.status} ${response.statusText}`);
-          }
-          
-          console.log('[TON] Wallet saved successfully');
-          alert('TON-кошелек успешно подключён и сохранён!');
-          return;
-        } catch (e) {
-          console.error('[TON] Error saving wallet to backend:', e);
-          alert('Ошибка при сохранении кошелька. Пожалуйста, попробуйте ещё раз.');
+      try {
+        // First try to get wallet from Telegram
+        const telegramWallet = await getWalletFromTelegram();
+        if (telegramWallet?.account?.address) {
+          console.log('[TON] Found wallet in Telegram WebApp');
+          await handleWalletConnected(telegramWallet);
           return;
         }
+
+        // If no wallet found, try to open Telegram Wallet
+        console.log('[TON] No wallet found, opening Telegram Wallet...');
+                // Open the wallet using Telegram WebApp API if available
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+          try {
+            // Try to use openTelegramLink if available
+            if ('openTelegramLink' in tg && typeof tg.openTelegramLink === 'function') {
+              (tg as any).openTelegramLink('https://t.me/wallet');
+            } else if ('openTelegramApp' in tg && typeof (tg as any).openTelegramApp === 'function') {
+              // Fallback to openTelegramApp if available
+              (tg as any).openTelegramApp('https://t.me/wallet');
+            } else if ('openLink' in tg && typeof (tg as any).openLink === 'function') {
+              // Fallback to openLink if available
+              (tg as any).openLink('https://t.me/wallet');
+            } else {
+              // Fallback to window.open
+              window.open('https://t.me/wallet', '_blank');
+            }
+          } catch (e) {
+            console.error('Error opening Telegram wallet:', e);
+            window.open('https://t.me/wallet', '_blank');
+          }
+        } else {
+          // Fallback to window.open if Telegram WebApp is not available
+          window.open('https://t.me/wallet', '_blank');
+        }
+        
+        // Show message to user
+        setShowWalletLink(true);
+        alert('Пожалуйста, создайте или разблокируйте кошелек в открывшемся окне, затем вернитесь и нажмите "Подключить TON-кошелёк" снова.');
+        
+      } catch (error) {
+        console.error('[TON] Error during wallet connection:', error);
+        alert(`Ошибка подключения: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
       }
       
-      // If wallet not found in WebApp, try to open it
-      console.log('[TON] Wallet not found in WebApp, trying to open...');
-      
-      // Open Telegram Wallet
-      if (window.Telegram?.WebApp?.openTelegramLink) {
-        window.Telegram.WebApp.openTelegramLink('https://t.me/wallet');
-      } else {
-        window.open('https://t.me/wallet', '_blank');
-      }
-      
-      // Show message to user
-      setShowWalletLink(true);
-      alert('Пожалуйста, создайте или разблокируйте кошелек в открывшемся окне, затем вернитесь и нажмите "Подключить TON-кошелёк" снова.');
-      
-    } catch (e) {
-      console.error('[TON] Connection error:', e);
-      setShowWalletLink(true);
-      alert('Ошибка подключения к TON-кошельку. Пожалуйста, попробуйте ещё раз.');
+    } catch (error) {
+      console.error('[TON] Error in connectTonWallet:', error);
+      alert(`Ошибка подключения: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
     } finally {
       setWalletLoading(false);
     }
-  }
+  }, [userId]);
 
-  // Получаем user info из Telegram WebApp initData
-  // Получаем user info из Telegram WebApp initData
-  let tgUser = { username: '', first_name: '', last_name: '' };
-  try {
-    const tg = (window as any).Telegram?.WebApp;
-    if (tg?.initDataUnsafe?.user) {
-      tgUser = {
-        username: tg.initDataUnsafe.user.username || '',
-        first_name: tg.initDataUnsafe.user.first_name || '',
-        last_name: tg.initDataUnsafe.user.last_name || ''
+  const handleWalletConnected = useCallback(async (wallet: any) => {
+    try {
+      if (!wallet?.account?.address) {
+        throw new Error('Не удалось получить адрес кошелька');
       }
+      
+      const walletAddress = wallet.account.address;
+      console.log('[TON] Wallet connected:', walletAddress);
+      setUserWallet(walletAddress);
+      
+      // Save to backend
+      console.log('[TON] Saving wallet to backend...');
+      const response = await fetch(`${getApiUrl()}/users/${userId}/wallet`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ton_wallet_address: walletAddress })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Ошибка сервера: ${response.status} ${response.statusText}`);
+      }
+      
+      console.log('[TON] Wallet saved successfully');
+      alert('TON-кошелек успешно подключён и сохранён!');
+      
+    } catch (e: any) {
+      console.error('[TON] Error handling wallet connection:', e);
+      alert(e.message || 'Произошла ошибка при подключении кошелька');
+      throw e;
     }
-  } catch {}
+  }, [userId]);
+
+  useEffect(() => {
+    const unsubscribe = tonConnect.onStatusChange((wallet) => {
+      console.log('[TON] Wallet status changed:', wallet);
+      if (wallet?.account?.address) {
+        handleWalletConnected(wallet).catch(console.error);
+      }
+    });
+    
+    // Initial check for connected wallet
+    if (tonConnect.wallet?.account?.address) {
+      handleWalletConnected(tonConnect.wallet).catch(console.error);
+    }
+    
+    return () => {
+      unsubscribe();
+    };
+  }, [handleWalletConnected]);
 
   useEffect(() => {
     // Получить кошелек пользователя
@@ -149,13 +213,13 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
     if (selected) fetchTickets(selected);
   };
 
-  const fetchTickets = async (lotteryId:number) => {
-    const res = await fetch(`${getApiUrl()}/tickets?lottery_id=${lotteryId}`);
+  const fetchTickets = async (lotteryId:string) => {
+    const res = await fetch(`${getApiUrl()}/lotteries/${lotteryId}/tickets`);
     setTickets(await res.json());
   };
 
-  const handleBuy = async (lotteryId: number, ticketNumbers: number[]) => {
-    setBuyStatus(null);
+  const handleBuy = async (lotteryId: string, ticketNumbers: number[]) => {
+    setBuyStatus({ status: 'loading' });
     try {
       const res = await fetch(`${getApiUrl()}/lotteries/${lotteryId}/buy`, {
         method: 'POST',
@@ -169,20 +233,64 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
         })
       });
       const data = await res.json();
-      if (data.ok) { setBuyStatus('Билеты успешно куплены!'); reload(); setSelected(null); setSelectedTickets([]); }
-      else setBuyStatus(data.detail || 'Ошибка покупки');
+      if (data.ok) { setBuyStatus({ status: 'success', message: 'Билеты успешно куплены!' }); reload(); setSelected(null); setSelectedTickets([]); }
+      else setBuyStatus({ status: 'error', message: data.detail || 'Ошибка покупки' });
     } catch (e) {
-      setBuyStatus('Ошибка соединения');
+      setBuyStatus({ status: 'error', message: 'Ошибка соединения' });
     }
   };
 
-  // Разделение активных и завершённых лотерей
+  const handleLotterySelect = (lotteryId: string) => {
+    // Get selected lottery data
+    const selectedLottery = lotteries.find(l => l.id === lotteryId);
+  
+    // Calculate total price of selected tickets
+    const totalPrice = selectedLottery ? selectedTickets.length * selectedLottery.ticket_price : 0;
+  
+    setSelected(lotteryId);
+    setSelectedTickets([]);
+    
+    // Load tickets for the selected lottery
+    const loadTickets = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${getApiUrl()}/lotteries/${lotteryId}/tickets`);
+        if (!response.ok) {
+          throw new Error('Failed to load tickets');
+        }
+        const data = await response.json();
+        setTickets(data);
+      } catch (err) {
+        console.error('Error loading tickets:', err);
+        setError('Failed to load tickets. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadTickets();
+  };
+
+  // Получаем user info из Telegram WebApp initData
+  let tgUser = { username: '', first_name: '', last_name: '' };
+  try {
+    const tg = (window as any).Telegram?.WebApp;
+    if (tg?.initDataUnsafe?.user) {
+      tgUser = {
+        username: tg.initDataUnsafe.user.username || '',
+        first_name: tg.initDataUnsafe.user.first_name || '',
+        last_name: tg.initDataUnsafe.user.last_name || ''
+      }
+    }
+  } catch {}
+
+  // Filter active and finished lotteries
   const active = lotteries.filter(l => !l.winner_id);
   const finished = lotteries.filter(l => l.winner_id);
 
   // Сетка билетов для выбранной лотереи
-  const renderTicketGrid = (lottery:any) => {
-    const taken = new Set(tickets.map(t => t.ticket_number));
+  const renderTicketGrid = (lottery: Lottery) => {
+    const taken = new Set(tickets.map(t => t.number));
     const buttons = [];
     for (let i = 1; i <= lottery.max_tickets; ++i) {
       const owned = taken.has(i);
@@ -252,8 +360,12 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
         <div style={{background:'#fff',borderRadius:20,padding:'32px 24px',maxWidth:360,width:'100%',boxShadow:'0 8px 32px #232C5140',textAlign:'center'}}>
           <div style={{fontWeight:700,fontSize:24,color:'#244',marginBottom:8}}>Привяжите TON-кошелёк</div>
           <div style={{fontSize:15,marginBottom:16,color:'#444'}}>Для получения выигрыша подключите свой TON Wallet через Telegram.<br/>Вы всегда сможете изменить его позже.</div>
-          <button className="btn btn-primary" onClick={connectTonWallet} disabled={walletLoading}>
-            {walletLoading ? 'Подключение...' : 'Подключить TON-кошелек через Telegram'}
+          <button 
+            className={`btn btn-primary ${walletLoading ? 'disabled' : ''}`}
+            onClick={connectTonWallet}
+            disabled={walletLoading}
+          >
+            {walletLoading ? 'Подключение...' : 'Подключить TON-кошелёк'}
           </button>
           {showWalletLink && (
             <button
@@ -305,7 +417,7 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
               {active.map(lot => (
                 <div className="col-12 col-sm-6 col-lg-4 mb-3" key={lot.id}>
                   <div className="card shadow-sm lottery-card" style={{border:'none',borderRadius:16,background:'linear-gradient(120deg,#232C51 60%,#3B4271 100%)',color:'#fff',transition:'box-shadow 0.2s',boxShadow:'0 2px 12px #7C5CFF33',padding:0}}>
-                    <div style={{display:'flex',alignItems:'center',padding:'12px 16px',cursor:'pointer'}} onClick={()=>setSelected(selected===lot.id?null:lot.id)}>
+                    <div style={{display:'flex',alignItems:'center',padding:'12px 16px',cursor:'pointer'}} onClick={()=>setSelected(lot.id)}>
                       <svg width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style={{marginRight:10}}>
                         <defs>
                           <linearGradient id="star-gradient-premium2" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
@@ -318,12 +430,12 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
                       </svg>
                       <div style={{flex:1}}>
                         <div style={{fontWeight:700,fontSize:18}}>{lot.name}</div>
-                        <div style={{fontSize:13,opacity:0.8,marginTop:2}}>Цена: <b>{lot.ticket_price}</b> ⭐ | Приз: <b>{lot.ticket_price*lot.max_tickets}</b> ⭐</div>
+                        <div style={{fontSize:13,opacity:0.8,marginTop:2}}>Цена: <b>{lot.ticket_price}</b> {lot.ticket_price_currency} | Приз: <b>{lot.ticket_price*lot.max_tickets}</b> {lot.ticket_price_currency}</div>
                         <div style={{height:7,background:'#3B4271',borderRadius:6,overflow:'hidden',marginTop:6}}>
                           <div style={{width:`${100*lot.tickets_sold/lot.max_tickets}%`,height:'100%',background:'linear-gradient(90deg,#7CD6FF,#F27AFF)',transition:'width 0.6s'}}></div>
                         </div>
                       </div>
-                      <button className="btn btn-sm" style={{background:'linear-gradient(90deg,#F27AFF,#7CD6FF)',color:'#232C51',fontWeight:700,marginLeft:8,display:'flex',alignItems:'center',gap:4,border:'none',borderRadius:8,boxShadow:'0 0 8px #7C5CFF80'}} onClick={e=>{e.stopPropagation();setSelected(lot.id);fetchTickets(lot.id);}}>
+                      <button className="btn btn-sm" style={{background:'linear-gradient(90deg,#F27AFF,#7CD6FF)',color:'#232C51',fontWeight:700,marginLeft:8,display:'flex',alignItems:'center',gap:4,border:'none',borderRadius:8,boxShadow:'0 0 8px #7C5CFF80'}} onClick={e=>{e.stopPropagation();handleLotterySelect(lot.id);}}>
                         <svg width="18" height="18" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M24 4c2.5 3.5 4.6 8.6 5.1 13.3H43c-2.3 2.1-6.6 5.2-10.5 8.4L36.2 40 24 31.3 11.8 40l3.7-14.4C11.6 22.5 7.3 19.4 5 17.3h13.9C19.4 12.6 21.5 7.5 24 4z" fill="url(#star-gradient-premium2)"/>
                         </svg>
@@ -344,10 +456,10 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
               <div className="card border-success shadow-lg lottery-card" style={{border:'none',borderRadius:18,background:'linear-gradient(120deg,#fffbe7 0%,#fff 100%)',transition:'transform 0.2s',boxShadow:'0 4px 24px #ffd60033',position:'relative',overflow:'hidden'}}>
                 <div className="card-body" style={{position:'relative',zIndex:2}}>
                   <h5 className="card-title" style={{fontWeight:700,color:'#388e3c',textShadow:'0 1px 8px #ffd60040'}}>{lot.name}</h5>
-                  <div className="mb-2">Цена: <b style={{color:'#ffd600'}}>{lot.ticket_price} Stars</b></div>
+                  <div className="mb-2">Цена: <b style={{color:'#ffd600'}}>{lot.ticket_price} {lot.ticket_price_currency}</b></div>
                   <div className="mb-2">Всего билетов: <b>{lot.max_tickets}</b></div>
                   <div className="mb-2">Продано: <b>{lot.tickets_sold}</b></div>
-                  <div className="mb-2">Приз: <b style={{color:'#ffd600'}}>{lot.ticket_price*lot.max_tickets} Stars</b></div>
+                  <div className="mb-2">Приз: <b style={{color:'#ffd600'}}>{lot.ticket_price*lot.max_tickets} {lot.ticket_price_currency}</b></div>
                   <div className="mt-2 text-success" style={{fontWeight:600}}>
                     Победитель: <b>{lot.winner_username || lot.winner_first_name || lot.winner_id}</b> (билет №{lot.winner_ticket_number})<br/>
                     {lot.random_link && (<span><a href={lot.random_link} target="_blank" rel="noopener noreferrer" style={{color:'#0d47a1',fontWeight:700}}>random.org</a></span>)}
@@ -357,7 +469,11 @@ export const LotteriesPage: React.FC<{ userId: number }> = ({ userId }) => {
             </div>
           ))}
         </div>
-        {buyStatus && <div className="alert alert-info mt-4">{buyStatus}</div>}
+        {buyStatus.status !== 'idle' && (
+          <div className={`alert alert-${buyStatus.status === 'success' ? 'success' : 'danger'}`}>
+            {buyStatus.message}
+          </div>
+        )}
       </div>
     </div>
   );
