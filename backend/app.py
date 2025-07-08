@@ -227,11 +227,14 @@ def choose_winner(lottery_id: int, db: Session, force: bool=False):
     if not force and lottery.tickets_sold < lottery.max_tickets:
         raise HTTPException(400, detail="Not enough tickets sold")
 
-    # random.org only — no fallback
+    # Try random.org; if it fails or key not set, fallback to Python random()
     req_id = str(uuid.uuid4())
     random_number = None
     verify_url = None
+    use_random_org = bool(RANDOM_API_KEY)
     try:
+        if not use_random_org:
+            raise Exception("RANDOM_API_KEY not set")
         payload = {
             "jsonrpc":"2.0",
             "method":"generateSignedIntegers",
@@ -269,7 +272,11 @@ def choose_winner(lottery_id: int, db: Session, force: bool=False):
             print('Shortlink error:', ex)
         verify_url = short_url
     except Exception as e:
-        raise HTTPException(500, detail=f"random.org error: {e}")
+        # Fallback to python's random if random.org unavailable
+        import random as _rnd
+        random_number = _rnd.randint(1, lottery.tickets_sold)
+        verify_url = None
+        print("Fallback random():", random_number, "reason:", e)
 
     winner_ticket=db.query(Ticket).filter_by(lottery_id=lottery_id, ticket_number=random_number).first()
     if not winner_ticket:
