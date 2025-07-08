@@ -148,6 +148,18 @@ def buy_ticket(lottery_id: int, req: BuyTicketRequest, db: Session = Depends(get
     lottery = db.query(Lottery).filter(Lottery.id == lottery_id).first()
     if not lottery:
         raise HTTPException(404, detail="Lottery not found")
+    # Ensure user exists (create lazily)
+    user = db.query(User).filter(User.user_id == req.user_id).first()
+    if not user:
+        user = User(
+            user_id=req.user_id,
+            username=req.username,
+            first_name=req.first_name,
+            last_name=req.last_name
+        )
+        db.add(user)
+        db.commit()
+    
     if not req.ticket_numbers or not isinstance(req.ticket_numbers, list):
         raise HTTPException(400, detail="No tickets selected")
     if len(req.ticket_numbers) + lottery.tickets_sold > lottery.max_tickets:
