@@ -339,6 +339,12 @@ def list_tickets(lottery_id: int | None = None, db: Session = Depends(get_db)):
         q = q.filter(Ticket.lottery_id == lottery_id)
     return q.all()
 
+# New helper route for frontend compatibility
+@app.get("/lotteries/{lottery_id}/tickets", response_model=list[TicketOut])
+def list_tickets_by_lottery(lottery_id: int, db: Session = Depends(get_db)):
+    """Return all tickets for a specific lottery (alias of /tickets?lottery_id=)."""
+    return db.query(Ticket).filter(Ticket.lottery_id == lottery_id).all()
+
 @app.post("/lotteries/{lottery_id}/draw")
 def manual_draw(lottery_id: int, db: Session = Depends(get_db)):
     res = choose_winner(lottery_id, db, force=True)
