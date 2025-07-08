@@ -276,6 +276,7 @@ const fetchTickets = async (lotteryId:string) => {
   if (loading) return <div style={{color:'#fff',padding:32}}>Загрузка...</div>;
   if (error) return <div style={{color:'#fff',padding:32}}>Ошибка загрузки лотерей</div>;
 
+  // If user hasn't connected wallet yet
   if (!userWallet) {
     return (
       <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',background:'#232C51'}}>
@@ -286,6 +287,20 @@ const fetchTickets = async (lotteryId:string) => {
         </div>
       </div>
     );
+  }
+
+  // If a lottery is selected, show ticket grid overlay
+  if (selected) {
+    const lot = lotteries.find(l => l.id === selected);
+    if (lot) {
+      return (
+        <div style={{minHeight:'100vh',background:'#232C51',color:'#fff',padding:'24px'}}>
+          <button className="btn btn-link mb-3" onClick={()=>{setSelected(null);}} style={{color:'#7CD6FF'}}>&larr; Назад</button>
+          <h3 style={{fontWeight:700,marginBottom:16}}>{lot.name}</h3>
+          {renderTicketGrid(lot)}
+        </div>
+      );
+    }
   }
 
   return (
