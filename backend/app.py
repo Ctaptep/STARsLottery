@@ -290,6 +290,7 @@ def choose_winner(lottery_id: int, db: Session, force: bool=False):
 
     # Telegram notifications to ALL users who bought at least one ticket in this lottery
     BOT_TOKEN = os.getenv("BOT_TOKEN")
+    ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
     if BOT_TOKEN:
         def tg_send(chat, text):
             try:
@@ -298,6 +299,17 @@ def choose_winner(lottery_id: int, db: Session, force: bool=False):
                 print(f"Telegram send error: {ex}")
         # Получаем всех уникальных пользователей
         users = db.query(Ticket.user_id, Ticket.username, Ticket.first_name, Ticket.last_name).filter(Ticket.lottery_id==lottery_id).distinct().all()
+        # Notify admin if configured
+        if ADMIN_CHAT_ID:
+            try:
+                admin_msg = (f"Лотерея '{lottery.name}' завершена. Победитель: "
+                             f"{winner_ticket.username or winner_ticket.first_name or winner_ticket.user_id} "
+                             f"(ID {winner_ticket.user_id}) с билетом №{random_number}." +
+                             (f"\nСсылка на проверку: {lottery.random_link}" if lottery.random_link else ""))
+                tg_send(ADMIN_CHAT_ID, admin_msg)
+            except Exception as ex:
+                print('Admin notify error:', ex)
+
         for u in users:
             winner_name = winner_ticket.username or winner_ticket.first_name or str(winner_ticket.user_id)
             verify_html = f'<a href="{lottery.random_link}">Проверка random.org</a>'
