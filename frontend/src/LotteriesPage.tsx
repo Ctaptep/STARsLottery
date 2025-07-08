@@ -132,7 +132,9 @@ const reload = useCallback(async () => {
 
 const fetchTickets = async (lotteryId:string) => {
     const res = await fetch(`${getApiUrl()}/lotteries/${lotteryId}/tickets`);
-    setTickets(await res.json());
+    const raw = await res.json();
+    setTickets(raw.map((t:any)=>({ ...t, number: t.ticket_number })));
+
   };
 
   const handleBuy = async (lotteryId: string, ticketNumbers: number[]) => {
@@ -181,7 +183,8 @@ const fetchTickets = async (lotteryId:string) => {
           throw new Error('Failed to load tickets');
         }
         const data = await response.json();
-        setTickets(data);
+        // map backend ticket_number -> number expected by UI
+        setTickets(data.map((t: any) => ({ ...t, number: t.ticket_number })));
       } catch (err) {
         console.error('Error loading tickets:', err);
         setError('Failed to load tickets. Please try again.');
