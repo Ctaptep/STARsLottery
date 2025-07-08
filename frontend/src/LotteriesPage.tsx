@@ -116,7 +116,21 @@ export const LotteriesPage: React.FC<{ userId: string }> = ({ userId }) => {
     return () => clearInterval(poll);
   }, [userId]);
 
-  const fetchTickets = async (lotteryId:string) => {
+  // Reload lotteries and, if necessary, tickets
+const reload = useCallback(async () => {
+  try {
+    const res = await fetch(`${getApiUrl()}/lotteries`);
+    if (!res.ok) throw new Error('Failed to load lotteries');
+    const lots = await res.json();
+    setLotteries(lots);
+    if (selected) await fetchTickets(selected);
+  } catch (err) {
+    console.error('Error reloading lotteries:', err);
+    setError('Ошибка загрузки лотерей');
+  }
+}, [selected]);
+
+const fetchTickets = async (lotteryId:string) => {
     const res = await fetch(`${getApiUrl()}/lotteries/${lotteryId}/tickets`);
     setTickets(await res.json());
   };
@@ -136,7 +150,12 @@ export const LotteriesPage: React.FC<{ userId: string }> = ({ userId }) => {
         })
       });
       const data = await res.json();
-      if (data.ok) { setBuyStatus({ status: 'success', message: 'Билеты успешно куплены!' }); window.location.reload(); setSelected(null); setSelectedTickets([]); }
+      if (data.ok) {
+        setBuyStatus({ status: 'success', message: 'Билеты успешно куплены!' });
+        await reload();
+        setSelected(null);
+        setSelectedTickets([]);
+      }
       else setBuyStatus({ status: 'error', message: data.detail || 'Ошибка покупки' });
     } catch (e) {
       setBuyStatus({ status: 'error', message: 'Ошибка соединения' });
