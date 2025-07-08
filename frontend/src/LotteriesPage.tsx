@@ -354,7 +354,7 @@ const fetchTickets = async (lotteryId:string) => {
                       </svg>
                       <div style={{flex:1}}>
                         <div style={{fontWeight:700,fontSize:18}}>{lot.name}</div>
-                        <div style={{fontSize:13,opacity:0.8,marginTop:2}}>Цена: <b>{lot.ticket_price}</b> {lot.ticket_price_currency} | Приз: <b>{lot.ticket_price*lot.max_tickets}</b> {lot.ticket_price_currency}</div>
+                        <div style={{fontSize:13,opacity:0.8,marginTop:2}}>Цена: <b>{lot.ticket_price}</b> {lot.ticket_price_currency} | Билетов: <b>{lot.max_tickets}</b> шт.</div>
                         <div style={{height:7,background:'#3B4271',borderRadius:6,overflow:'hidden',marginTop:6}}>
                           <div style={{width:`${100*lot.tickets_sold/lot.max_tickets}%`,height:'100%',background:'linear-gradient(90deg,#7CD6FF,#F27AFF)',transition:'width 0.6s'}}></div>
                         </div>
