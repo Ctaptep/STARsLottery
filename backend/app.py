@@ -91,7 +91,9 @@ class LotteryOut(BaseModel):
 def get_lotteries(db: Session = Depends(get_db)):
     lts = db.query(Lottery).all()
     # Если нет ни одной лотереи, создать дефолтную
-    if not lts:
+    # Создать дефолтную лотерею, если её совсем нет или все предыдущие уже завершены
+    active_exists = any(l.winner_id is None for l in lts)
+    if not lts or not active_exists:
         obj = Lottery(
             name="Лотерея #1",
             ticket_price=1,
@@ -101,7 +103,10 @@ def get_lotteries(db: Session = Depends(get_db)):
         db.add(obj)
         db.commit()
         db.refresh(obj)
-        lts = [obj]
+        if not lts:
+            lts = [obj]
+        else:
+            lts.append(obj)
     result = []
     for l in lts:
         winner_ticket = None
