@@ -136,6 +136,32 @@ export const LotteriesPage: React.FC<{ userId: string }> = ({ userId }) => {
     return () => clearInterval(poll);
   }, [userId]);
 
+  // Обновление баланса звёзд и курса TON→⭐ каждые 5 минут
+  useEffect(() => {
+    if (!userWallet) return;
+
+    const fetchBalanceAndRate = async () => {
+      try {
+        const [balData, rateData] = await Promise.all([
+          fetch(`${getApiUrl()}/users/${userId}/balance`).then(r => r.json()).catch(() => null),
+          fetch(`${getApiUrl()}/rates/ton_star`).then(r => r.json()).catch(() => null)
+        ]);
+        if (balData && typeof balData.stars_balance === 'number') {
+          setStarsBalance(balData.stars_balance);
+        }
+        if (rateData && typeof rateData.ton_to_star === 'number') {
+          setTonRate(rateData.ton_to_star);
+        }
+      } catch (err) {
+        console.error('Failed to refresh balance/rate', err);
+      }
+    };
+
+    fetchBalanceAndRate(); // первый вызов
+    const interval = setInterval(fetchBalanceAndRate, 300_000); // 5 минут
+    return () => clearInterval(interval);
+  }, [userWallet, userId]);
+
   // Reload lotteries and, if necessary, tickets
 const reload = useCallback(async () => {
   try {
@@ -342,7 +368,7 @@ const fetchTickets = async (lotteryId:string) => {
     ticketsSold:lot.tickets_sold,
     maxTickets:lot.max_tickets,
     ticketPrice:lot.ticket_price,
-    participants:lot.tickets_sold,
+    participants:(lot as any).participants ?? lot.tickets_sold,
     endDate:lot.end_date,
     randomLink:lot.random_link||undefined,
     onBuy:()=>handleLotterySelect(lot.id),
