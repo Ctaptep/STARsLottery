@@ -332,10 +332,30 @@ const fetchTickets = async (lotteryId:string) => {
     );
   }
 
+  // helper
+  const mapLot=(lot:Lottery)=>({
+    id:lot.id,
+    name:lot.name,
+    description:lot.description,
+    prizePoolStars:lot.ticket_price*lot.max_tickets,
+    tonToStarRate:tonRate,
+    ticketsSold:lot.tickets_sold,
+    maxTickets:lot.max_tickets,
+    ticketPrice:lot.ticket_price,
+    participants:lot.tickets_sold,
+    endDate:lot.end_date,
+    randomLink:lot.random_link||undefined,
+    onBuy:()=>handleLotterySelect(lot.id),
+    onDetails:()=>setDetails(lot)
+  });
+
   // Tabs arrays
   const activeLots = lotteries.filter(l=>!l.winner_id);
   const finishedLots = lotteries.filter(l=>l.winner_id);
-  const myLots = lotteries.filter(l=>tickets.some(t=>t.owner===tgUser.username)||l.winner_id===userId);
+  const participatedLots = lotteries.filter(l=>tickets.some(t=>t.owner===tgUser.username));
+  const wonLots = lotteries.filter(l=>l.winner_id===userId);
+  
+  
 
   // If a lottery is selected, show ticket grid overlay
   if (selected) {
@@ -363,29 +383,30 @@ const fetchTickets = async (lotteryId:string) => {
 
       {/* List of lotteries */}
       <div style={{padding:'0 16px'}}>
-        {(tab==='active'?activeLots:tab==='finished'?finishedLots:activeLots.concat(finishedLots)).map(lot=>(
-          <LotteryCard
-            key={lot.id}
-            id={lot.id}
-            name={lot.name}
-            description={lot.description}
-            prizePoolStars={lot.ticket_price*lot.max_tickets}
-            tonToStarRate={tonRate}
-            ticketsSold={lot.tickets_sold}
-            maxTickets={lot.max_tickets}
-            ticketPrice={lot.ticket_price}
-            participants={lot.tickets_sold}
-            endDate={lot.end_date}
-            onBuy={()=>handleLotterySelect(lot.id)}
-            onDetails={()=>setDetails(lot)}
-            status={tab==='finished'?'finished':'active'}
-          />
-        ))}
+        {tab === 'my' ? (
+          <>
+            {wonLots.length > 0 && (
+              <>
+                <h4 style={{color:'#7CFF7C',margin:'8px 0'}}>Победил</h4>
+                {wonLots.map((lot) => (
+                  <LotteryCard key={lot.id} {...mapLot(lot)} status="finished" canBuy={false} />
+                ))}
+              </>
+            )}
+            {participatedLots.length > 0 && (
+              <>
+                <h4 style={{color:'#fff',margin:'8px 0'}}>Участвовал</h4>
+                {participatedLots.map(lot => (
+                  <LotteryCard key={lot.id} {...mapLot(lot)} status={lot.winner_id ? 'finished' : 'active'} canBuy={!lot.winner_id && !!userWallet} />
+                ))}
+              </>
+            )}
+          </>
+        ) : null}
       </div>
-
       <DetailsModal
         visible={!!details}
-        title={details?.name||''}
+        title={details?.name || ''}
         onClose={()=>setDetails(null)}
       >
         <p>{details?.description}</p>

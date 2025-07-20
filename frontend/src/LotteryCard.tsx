@@ -2,6 +2,7 @@ import React from 'react';
 import './lotteryCard.css';
 
 interface LotteryCardProps {
+  randomLink?: string;
   id: string;
   name: string;
   description?: string;
@@ -14,6 +15,7 @@ interface LotteryCardProps {
   endDate: string;
   onBuy: (lotteryId: string) => void;
   onDetails: (lotteryId: string) => void;
+  canBuy:boolean;
   status?: 'active' | 'finished' | 'my';
 }
 
@@ -31,6 +33,8 @@ const LotteryCard: React.FC<LotteryCardProps> = ({
   onBuy,
   onDetails,
   status = 'active',
+  randomLink,
+  canBuy,
 }) => {
   const percent = Math.min(100, Math.round((ticketsSold / maxTickets) * 100));
   const daysLeft = Math.ceil((new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
@@ -69,8 +73,12 @@ const LotteryCard: React.FC<LotteryCardProps> = ({
         )}
       </div>
 
+      {randomLink && status==='finished' && (
+        <div style={{fontSize:12,marginTop:4}}><a href={randomLink} target="_blank" rel="noopener noreferrer">random.org</a></div>
+      )}
+
       <div className="actions-row">
-        <button className="buy-btn" onClick={()=>onBuy(id)}>Купить билет</button>
+        {canBuy && <button className="buy-btn" onClick={()=>onBuy(id)}>Купить билет</button>}
         <button className="details-btn" onClick={()=>onDetails(id)}>Подробнее</button>
       </div>
     </div>
