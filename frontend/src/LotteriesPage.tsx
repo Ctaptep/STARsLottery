@@ -289,9 +289,9 @@ const fetchTickets = async (lotteryId:string) => {
             borderRadius: 8,
             userSelect: 'none',
             overflow: 'hidden',
-            background: '#fff',
-            border: '1.5px solid #3B4271',
-            color: '#232C51',
+            background: 'linear-gradient(120deg,#232C51 60%,#3B4271 100%)',
+            border: '1.5px solid #7C5CFF',
+            color: '#fff',
             whiteSpace: 'nowrap',
           }}
           onClick={() => {
