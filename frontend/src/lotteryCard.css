@@ -1,0 +1,24 @@
+.lottery-card-new{
+  background:#121212;
+  border:1px solid #2a2a2a;
+  border-radius:12px;
+  padding:16px;
+  margin-bottom:16px;
+  color:#fff;
+  font-family:Inter, sans-serif;
+}
+.header-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.status-active{background:#42e57b;padding:2px 6px;border-radius:6px;font-size:12px;color:#000;}
+.status-finished{background:#777;padding:2px 6px;border-radius:6px;font-size:12px;}
+.description{font-size:13px;opacity:0.8;margin-bottom:12px;}
+.fund-block{display:flex;justify-content:space-between;margin-bottom:8px;font-size:14px;}
+.fund-value{font-weight:600;}
+.progress-row{font-size:13px;margin-bottom:8px;}
+.progress-bar{width:100%;height:6px;background:#333;border-radius:4px;overflow:hidden;margin:4px 0;}
+.progress-bar>div{height:100%;background:#7C5CFF;}
+.meta-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;opacity:0.9;}
+.actions-row{display:flex;gap:8px;margin-top:12px;}
+.buy-btn,.details-btn{flex:1;border:none;border-radius:8px;padding:8px 0;cursor:pointer;font-size:14px;}
+.buy-btn{background:#7C5CFF;color:#fff;}
+.details-btn{background:#1d1d1d;color:#bbb;border:1px solid #333;}
+.buy-btn:disabled{background:#444;cursor:not-allowed;}
