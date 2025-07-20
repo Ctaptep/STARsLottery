@@ -118,6 +118,7 @@ def get_lotteries(db: Session = Depends(get_db)):
             "ticket_price": l.ticket_price,
             "max_tickets": l.max_tickets,
             "tickets_sold": l.tickets_sold,
+            "participants": db.query(func.count(func.distinct(Ticket.user_id))).filter(Ticket.lottery_id==l.id).scalar(),
             "winner_id": l.winner_id,
             "winner_username": winner_ticket.username if winner_ticket else None,
             "winner_first_name": winner_ticket.first_name if winner_ticket else None,

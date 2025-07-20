@@ -289,9 +289,9 @@ const fetchTickets = async (lotteryId:string) => {
             borderRadius: 8,
             userSelect: 'none',
             overflow: 'hidden',
-            background: '#121212',
-            border: '1.5px solid #333',
-            color: '#fff',
+            background: owned ? '#333' : '#121212',
+             color: owned ? '#666' : '#fff',
+             border: owned ? '1.5px solid #555' : '1.5px solid #333',
             whiteSpace: 'nowrap',
           }}
           onClick={() => {
@@ -300,7 +300,7 @@ const fetchTickets = async (lotteryId:string) => {
             else setSelectedTickets([...selectedTickets, i]);
           }}
         >
-          {i}
+          {owned ? '✖' : i}
         </button>
       );
     }

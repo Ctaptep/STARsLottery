@@ -2,7 +2,11 @@
 .user-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
 .avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;}
 .username{font-weight:600;}
-.stars-balance{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:14px;}
+.stars-balance{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:14px;flex-wrap:wrap;}
+@media (max-width: 420px){
+  .stars-balance{flex-direction:column;align-items:flex-end;gap:4px;font-size:13px;}
+  .stars-balance .rate-link{font-size:12px;}
+}
 .rate{opacity:0.8;}
 .topup-link{background:none;border:none;color:#4facfe;cursor:pointer;font-size:12px;}
 .stats-row{display:flex;gap:12px;margin-bottom:12px;}

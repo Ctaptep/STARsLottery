@@ -62,7 +62,9 @@ const DashboardHeader: React.FC<Props> = ({
         <div className="stars-balance">
           {renderStars()}
           {tonToStarRate !== null && (
-            <span className="rate">Курс: 1 TON ≈ {tonToStarRate} ⭐</span>
+            <a className="rate-link" href="https://www.coingecko.com/en/coins/toncoin" target="_blank" rel="noopener noreferrer" style={{textDecoration:'none',color:'#bbb'}}>
+              Курс: 1 TON ≈ {tonToStarRate} ⭐
+            </a>
           )}
         </div>
       </div>
