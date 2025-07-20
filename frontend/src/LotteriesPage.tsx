@@ -496,32 +496,6 @@ const fetchTickets = async (lotteryId:string) => {
           </div>
         </div>
         <h4 className="mt-4">Завершённые</h4>
-        <div className="row">
-          {finished.length === 0 && <div className="mb-3">Нет завершённых лотерей</div>}
-          {finished.map(lot => (
-            <div className="col-md-6 mb-3" key={lot.id}>
-              <div className="card border-success shadow-lg lottery-card" style={{border:'none',borderRadius:18,background:'linear-gradient(120deg,#fffbe7 0%,#fff 100%)',transition:'transform 0.2s',boxShadow:'0 4px 24px #ffd60033',position:'relative',overflow:'hidden'}}>
-                <div className="card-body" style={{position:'relative',zIndex:2}}>
-                  <h5 className="card-title" style={{fontWeight:700,color:'#388e3c',textShadow:'0 1px 8px #ffd60040'}}>{lot.name}</h5>
-                  <div className="mb-2">Цена: <b style={{color:'#ffd600'}}>{lot.ticket_price} {lot.ticket_price_currency}</b></div>
-                  <div className="mb-2">Всего билетов: <b>{lot.max_tickets}</b></div>
-                  <div className="mb-2">Продано: <b>{lot.tickets_sold}</b></div>
-                  <div className="mb-2">Приз: <b style={{color:'#ffd600'}}>{lot.ticket_price*lot.max_tickets} {lot.ticket_price_currency}</b></div>
-                  <div className="mt-2 text-success" style={{fontWeight:600}}>
-                    Победитель: <b>{lot.winner_username || lot.winner_first_name || lot.winner_id}</b> (билет №{lot.winner_ticket_number})<br/>
-                    {lot.random_link && (<span><a href={lot.random_link} target="_blank" rel="noopener noreferrer" style={{color:'#0d47a1',fontWeight:700}}>random.org</a></span>)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {buyStatus.status !== 'idle' && (
-          <div className={`alert alert-${buyStatus.status === 'success' ? 'success' : 'danger'}`}>
-            {buyStatus.message}
-          </div>
-        )}
     </div>
   );
 }
