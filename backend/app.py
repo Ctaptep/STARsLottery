@@ -173,7 +173,7 @@ def get_ton_star_rate():
         data = resp.json()
         ton_usd = data.get("the-open-network", {}).get("usd")
         # Suppose 1 STAR = 0.04 USD (=> 1 TON ≈ 25⭐ when TON≈1 USD)
-        star_usd = 0.04
+        star_usd = float(os.getenv("STAR_USD_PRICE", "0.02"))
         if ton_usd:
             ton_to_star = round(ton_usd / star_usd, 2)
     except Exception as ex:
@@ -358,7 +358,7 @@ def choose_winner(lottery_id: int, db: Session, force: bool=False):
         # Получаем всех уникальных пользователей
         users = db.query(Ticket.user_id, Ticket.username, Ticket.first_name, Ticket.last_name).filter(Ticket.lottery_id==lottery_id).distinct().all()
         # Notify admin if configured
-        if ADMIN_CHAT_ID:
+        if ADMIN_CHAT_ID and int(ADMIN_CHAT_ID) != winner_ticket.user_id:
             try:
                 admin_msg = (f"Лотерея '{lottery.name}' завершена. Победитель: "
                              f"{winner_ticket.username or winner_ticket.first_name or winner_ticket.user_id} "
