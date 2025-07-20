@@ -289,8 +289,8 @@ const fetchTickets = async (lotteryId:string) => {
             borderRadius: 8,
             userSelect: 'none',
             overflow: 'hidden',
-            background: 'linear-gradient(120deg,#232C51 60%,#3B4271 100%)',
-            border: '1.5px solid #7C5CFF',
+            background: '#121212',
+            border: '1.5px solid #333',
             color: '#fff',
             whiteSpace: 'nowrap',
           }}
@@ -312,11 +312,11 @@ const fetchTickets = async (lotteryId:string) => {
         </div>
         <div className="mt-3">
           <button
-            style={{background:'linear-gradient(90deg,#7C5CFF,#7CD6FF)',border:'none',color:'#fff',fontWeight:700}}
+            className="buy-btn"
             disabled={selectedTickets.length === 0}
             onClick={() => handleBuy(lottery.id, selectedTickets)}
           >Купить выбранные билеты</button>
-          <button className="btn btn-link ms-2" onClick={()=>{setSelected(null); setSelectedTickets([]);}}>Отмена</button>
+          <button className="details-btn ms-2" onClick={()=>{setSelected(null); setSelectedTickets([]);}}>Отмена</button>
         </div>
       </div>
     );
