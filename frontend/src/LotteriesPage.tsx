@@ -456,46 +456,6 @@ const fetchTickets = async (lotteryId:string) => {
       </DetailsModal>
 
 
-        <div className="row">
-          <div className="col-md-7">
-            <h4>Активные</h4>
-            <div className="row">
-              {active.length === 0 && <div className="mb-3">Нет активных лотерей</div>}
-              {active.map(lot => (
-                <div className="col-12 col-sm-6 col-lg-4 mb-3" key={lot.id}>
-                  <div className="card shadow-sm lottery-card" style={{border:'none',borderRadius:16,background:'linear-gradient(120deg,#232C51 60%,#3B4271 100%)',color:'#fff',transition:'box-shadow 0.2s',boxShadow:'0 2px 12px #7C5CFF33',padding:0}}>
-                    <div style={{display:'flex',alignItems:'center',padding:'12px 16px',cursor:'pointer'}} onClick={()=>setSelected(lot.id)}>
-                      <svg width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style={{marginRight:10}}>
-                        <defs>
-                          <linearGradient id="star-gradient-premium2" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-                            <stop stopColor="#F27AFF"/>
-                            <stop offset="0.5" stopColor="#7CD6FF"/>
-                            <stop offset="1" stopColor="#7C5CFF"/>
-                          </linearGradient>
-                        </defs>
-                        <path d="M24 4c2.5 3.5 4.6 8.6 5.1 13.3H43c-2.3 2.1-6.6 5.2-10.5 8.4L36.2 40 24 31.3 11.8 40l3.7-14.4C11.6 22.5 7.3 19.4 5 17.3h13.9C19.4 12.6 21.5 7.5 24 4z" fill="url(#star-gradient-premium2)"/>
-                      </svg>
-                      <div style={{flex:1}}>
-                        <div style={{fontWeight:700,fontSize:18}}>{lot.name}</div>
-                        <div style={{fontSize:13,opacity:0.8,marginTop:2}}>Цена: <b>{lot.ticket_price}</b> {lot.ticket_price_currency} | Билетов: <b>{lot.max_tickets}</b> шт.</div>
-                        <div style={{height:7,background:'#3B4271',borderRadius:6,overflow:'hidden',marginTop:6}}>
-                          <div style={{width:`${100*lot.tickets_sold/lot.max_tickets}%`,height:'100%',background:'linear-gradient(90deg,#7CD6FF,#F27AFF)',transition:'width 0.6s'}}></div>
-                        </div>
-                      </div>
-                      <button className="btn btn-sm" style={{background:'linear-gradient(90deg,#F27AFF,#7CD6FF)',color:'#232C51',fontWeight:700,marginLeft:8,display:'flex',alignItems:'center',gap:4,border:'none',borderRadius:8,boxShadow:'0 0 8px #7C5CFF80'}} onClick={e=>{e.stopPropagation();handleLotterySelect(lot.id);}}>
-                        <svg width="18" height="18" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M24 4c2.5 3.5 4.6 8.6 5.1 13.3H43c-2.3 2.1-6.6 5.2-10.5 8.4L36.2 40 24 31.3 11.8 40l3.7-14.4C11.6 22.5 7.3 19.4 5 17.3h13.9C19.4 12.6 21.5 7.5 24 4z" fill="url(#star-gradient-premium2)"/>
-                        </svg>
-                        Купить
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-        <h4 className="mt-4">Завершённые</h4>
     </div>
   );
 }
