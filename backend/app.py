@@ -1,6 +1,7 @@
 # FastAPI entrypoint for Telegram Mini App "Лотерея"
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy import func
 from pydantic import BaseModel
 import os, hashlib, hmac
 from dotenv import load_dotenv
@@ -13,6 +14,13 @@ load_dotenv()
 from fastapi import Body
 
 app = FastAPI()
+
+# ---- Simple in-memory cache for TON/star rate ----
+_rate_cache = {
+    "value": None,
+    "ts": 0
+}
+RATE_CACHE_SECONDS = 300
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -142,6 +150,50 @@ class BuyTicketRequest(BaseModel):
 class WalletUpdateRequest(BaseModel):
     ton_wallet_address: str
 
+
+# -------------------- Utility endpoints --------------------
+
+@app.get("/rates/ton_star")
+def get_ton_star_rate():
+    """Return current conversion: how many ⭐ in 1 TON."""
+    import time, requests
+    now = time.time()
+    if _rate_cache["value"] and now - _rate_cache["ts"] < RATE_CACHE_SECONDS:
+        return {"ton_to_star": _rate_cache["value"], "cached": True}
+    try:
+        # Fallback constant if API fails
+        ton_to_star = 25.0
+        resp = requests.get("https://api.coingecko.com/api/v3/simple/price", params={"ids":"the-open-network","vs_currencies":"usd"}, timeout=5)
+        data = resp.json()
+        ton_usd = data.get("the-open-network", {}).get("usd")
+        # Suppose 1 STAR = 0.04 USD (=> 1 TON ≈ 25⭐ when TON≈1 USD)
+        star_usd = 0.04
+        if ton_usd:
+            ton_to_star = round(ton_usd / star_usd, 2)
+    except Exception as ex:
+        print("Rate fetch error:", ex)
+        ton_to_star = 25.0
+    _rate_cache.update({"value": ton_to_star, "ts": now})
+    return {"ton_to_star": ton_to_star, "cached": False}
+
+@app.get("/users/{user_id}/stats")
+def user_stats(user_id: int, db: Session = Depends(get_db)):
+    """Return wins, tickets bought, active lotteries count for user."""
+    wins = db.query(func.count(Lottery.id)).filter(Lottery.winner_id == user_id).scalar() or 0
+    tickets = db.query(func.count(Ticket.id)).filter(Ticket.user_id == user_id).scalar() or 0
+    active = db.query(func.count(Lottery.id)).join(Ticket, Ticket.lottery_id == Lottery.id).filter(Ticket.user_id == user_id, Lottery.winner_id == None).scalar() or 0
+    return {"wins": wins, "tickets": tickets, "active_lotteries": active}
+
+@app.get("/users/{user_id}/balance")
+def user_balance(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(404, detail="User not found")
+    # stars_balance could be a column later; return 0 for now
+    balance = getattr(user, "stars_balance", 0) or 0
+    return {"stars_balance": balance}
+
+# -------------------- Existing endpoints --------------------
 
 @app.post("/lotteries/{lottery_id}/buy")
 def buy_ticket(lottery_id: int, req: BuyTicketRequest, db: Session = Depends(get_db)):

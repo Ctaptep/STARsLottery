@@ -1,11 +1,11 @@
 .ticket-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(32px, 1fr));
-  gap: 4px;
+  grid-template-columns: repeat(auto-fit, minmax(36px, 1fr));
+  gap: 6px;
   width: 100%;
   margin: 0 auto;
-  padding: 4px;
-  background: rgba(44,54,101,0.05);
+  padding: 6px;
+  background: #1d1d1d;
   border-radius: 12px;
   box-sizing: border-box;
 }
@@ -24,7 +24,7 @@
 
 @media (max-width: 500px) {
   .ticket-grid {
-    grid-template-columns: repeat(10, 1fr) !important;
+    grid-template-columns: repeat(8, 1fr) !important;
   }
 }
 

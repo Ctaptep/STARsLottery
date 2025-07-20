@@ -1,0 +1,14 @@
+.dashboard-header{padding:16px;background:#111;color:#fff;font-family:Inter, sans-serif;}
+.user-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;}
+.username{font-weight:600;}
+.stars-balance{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:14px;}
+.rate{opacity:0.8;}
+.topup-link{background:none;border:none;color:#4facfe;cursor:pointer;font-size:12px;}
+.stats-row{display:flex;gap:12px;margin-bottom:12px;}
+.stat-card{flex:1;background:#1d1d1d;border-radius:8px;padding:8px;text-align:center;}
+.stat-value{font-size:18px;font-weight:600;}
+.stat-label{font-size:12px;opacity:0.7;}
+.wallet-row{margin-top:8px;}
+.wallet-connect{background:#7C5CFF;color:#fff;border:none;border-radius:6px;padding:8px 12px;cursor:pointer;}
+.wallet-connected{font-size:12px;opacity:0.8;}

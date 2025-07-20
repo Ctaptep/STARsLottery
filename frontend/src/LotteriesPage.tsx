@@ -1,5 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import DashboardHeader from './DashboardHeader';
 import './ticketGrid.css';
+import LotteryCard from './LotteryCard';
+import { DetailsModal } from './DetailsModal';
 import { TonConnectButton, useTonWallet } from '@tonconnect/ui-react';
 import { toUserFriendlyAddress } from '@tonconnect/sdk';
 
@@ -53,6 +56,11 @@ export const LotteriesPage: React.FC<{ userId: string }> = ({ userId }) => {
   const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
   const [userWallet, setUserWallet] = useState<string | null>(null);
   const [walletLoading, setWalletLoading] = useState<boolean>(false);
+  const [tab,setTab]=useState<'active'|'finished'|'my'>('active');
+  const [details,setDetails]=useState<Lottery|null>(null);
+  const [stats, setStats] = useState<{wins:number;tickets:number;active_lotteries:number}>({wins:0,tickets:0,active_lotteries:0});
+  const [starsBalance,setStarsBalance]=useState<number|null>(null);
+  const [tonRate,setTonRate]=useState<number|null>(null);
   const [walletInput, setWalletInput] = useState<string>('');
   const [buyStatus, setBuyStatus] = useState<BuyStatus>({ status: 'idle' });
   const [showWalletLink, setShowWalletLink] = useState<boolean>(false);
@@ -99,6 +107,18 @@ export const LotteriesPage: React.FC<{ userId: string }> = ({ userId }) => {
     fetch(`${getApiUrl()}/lotteries`)
       .then(r => r.json())
       .then(setLotteries)
+      .then(()=>{
+        // Load user stats, balance and rate
+        Promise.all([
+          fetch(`${getApiUrl()}/users/${userId}/stats`).then(r=>r.json()).catch(()=>null),
+          fetch(`${getApiUrl()}/users/${userId}/balance`).then(r=>r.json()).catch(()=>null),
+          fetch(`${getApiUrl()}/rates/ton_star`).then(r=>r.json()).catch(()=>null)
+        ]).then(([statsData,balData,rateData])=>{
+          if(statsData) setStats(statsData);
+          if(balData) setStarsBalance(balData.stars_balance);
+          if(rateData) setTonRate(rateData.ton_to_star);
+        });
+      })
       .catch(() => setError('Ошибка загрузки лотерей'))
       .finally(() => setLoading(false));
     // Polling
@@ -279,6 +299,26 @@ const fetchTickets = async (lotteryId:string) => {
   if (loading) return <div style={{color:'#fff',padding:32}}>Загрузка...</div>;
   if (error) return <div style={{color:'#fff',padding:32}}>Ошибка загрузки лотерей</div>;
 
+  // Header with stats
+  const avatarUrl=(window as any).Telegram?.WebApp?.initDataUnsafe?.user?.photo_url||null;
+
+  const headerEl=(
+    <DashboardHeader
+      avatarUrl={avatarUrl}
+      username={tgUser.username}
+      stats={stats}
+      starsBalance={starsBalance}
+      tonToStarRate={tonRate}
+      walletAddress={userWallet}
+      onConnectWallet={()=>{
+        (window as any).TonConnect?.connect&& (window as any).TonConnect.connect();
+      }}
+      onTopUpStars={()=>{
+        window.open('https://t.me/wallet', '_blank');
+      }}
+    />
+  );
+
   // If user hasn't connected wallet yet
   if (!userWallet) {
     return (
@@ -291,6 +331,11 @@ const fetchTickets = async (lotteryId:string) => {
       </div>
     );
   }
+
+  // Tabs arrays
+  const activeLots = lotteries.filter(l=>!l.winner_id);
+  const finishedLots = lotteries.filter(l=>l.winner_id);
+  const myLots = lotteries.filter(l=>tickets.some(t=>t.owner===tgUser.username)||l.winner_id===userId);
 
   // If a lottery is selected, show ticket grid overlay
   if (selected) {
@@ -307,8 +352,48 @@ const fetchTickets = async (lotteryId:string) => {
   }
 
   return (
-    <div style={{minHeight:'100vh',background:'#232C51',paddingBottom:40,backgroundImage:'radial-gradient(circle at 20% 20%, #7CD6FF22 0%, #232C5100 60%), radial-gradient(circle at 80% 10%, #F27AFF22 0%, #232C5100 60%)'}}>
-      <header style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'24px 0 8px 0'}}>
+    <div style={{minHeight:'100vh',background:'#000',paddingBottom:40}}>
+      {headerEl}
+      {/* Tabs */}
+      <div className="tabs-bar" style={{display:'flex',gap:8,margin:'0 16px 16px'}}>
+        {['active','finished','my'].map(t=>(
+          <button key={t} onClick={()=>setTab(t as any)} className="tab-btn" style={{flex:1,padding:8,borderRadius:8,border:'none',background:tab===t?'#7C5CFF':'#222',color:'#fff'}}>{t==='active'?'Активные':t==='finished'?'Завершённые':'Мои'}</button>
+        ))}
+      </div>
+
+      {/* List of lotteries */}
+      <div style={{padding:'0 16px'}}>
+        {(tab==='active'?activeLots:tab==='finished'?finishedLots:activeLots.concat(finishedLots)).map(lot=>(
+          <LotteryCard
+            key={lot.id}
+            id={lot.id}
+            name={lot.name}
+            description={lot.description}
+            prizePoolStars={lot.ticket_price*lot.max_tickets}
+            tonToStarRate={tonRate}
+            ticketsSold={lot.tickets_sold}
+            maxTickets={lot.max_tickets}
+            ticketPrice={lot.ticket_price}
+            participants={lot.tickets_sold}
+            endDate={lot.end_date}
+            onBuy={()=>handleLotterySelect(lot.id)}
+            onDetails={()=>setDetails(lot)}
+            status={tab==='finished'?'finished':'active'}
+          />
+        ))}
+      </div>
+
+      <DetailsModal
+        visible={!!details}
+        title={details?.name||''}
+        onClose={()=>setDetails(null)}
+      >
+        <p>{details?.description}</p>
+        <p>Условиями участия вы подтверждаете согласие на обработку персональных данных и принимаете пользовательское соглашение.</p>
+      </DetailsModal>
+
+      {/* legacy header */}
+      <header style={{display:'none'}}>
         <span style={{marginRight:16,display:'flex',alignItems:'center'}}>
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
