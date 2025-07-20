@@ -312,7 +312,7 @@ const fetchTickets = async (lotteryId:string) => {
         </div>
         <div className="mt-3">
           <button
-            className="btn btn-primary"
+            style={{background:'linear-gradient(90deg,#7C5CFF,#7CD6FF)',border:'none',color:'#fff',fontWeight:700}}
             disabled={selectedTickets.length === 0}
             onClick={() => handleBuy(lottery.id, selectedTickets)}
           >Купить выбранные билеты</button>
@@ -388,7 +388,7 @@ const fetchTickets = async (lotteryId:string) => {
     const lot = lotteries.find(l => l.id === selected);
     if (lot) {
       return (
-        <div style={{minHeight:'100vh',background:'#232C51',color:'#fff',padding:'24px'}}>
+        <div style={{minHeight:'100vh',background:'#000',color:'#fff',padding:'24px'}}>
           <button className="btn btn-link mb-3" onClick={()=>{setSelected(null);}} style={{color:'#7CD6FF'}}>&larr; Назад</button>
           <h3 style={{fontWeight:700,marginBottom:16}}>{lot.name}</h3>
           {renderTicketGrid(lot)}
