@@ -409,6 +409,22 @@ const fetchTickets = async (lotteryId:string) => {
 
       {/* List of lotteries */}
       <div style={{padding:'0 16px'}}>
+        {tab === 'active' && (
+          <>
+            {activeLots.length === 0 && <div style={{color:'#666',padding:8}}>Нет активных лотерей</div>}
+            {activeLots.map(lot => (
+              <LotteryCard key={lot.id} {...mapLot(lot)} status="active" canBuy={!!userWallet} />
+            ))}
+          </>
+        )}
+        {tab === 'finished' && (
+          <>
+            {finishedLots.length === 0 && <div style={{color:'#666',padding:8}}>Нет завершённых лотерей</div>}
+            {finishedLots.map(lot => (
+              <LotteryCard key={lot.id} {...mapLot(lot)} status="finished" canBuy={false} />
+            ))}
+          </>
+        )}
         {tab === 'my' ? (
           <>
             {wonLots.length > 0 && (
@@ -439,32 +455,7 @@ const fetchTickets = async (lotteryId:string) => {
         <p>Условиями участия вы подтверждаете согласие на обработку персональных данных и принимаете пользовательское соглашение.</p>
       </DetailsModal>
 
-      {/* legacy header */}
-      <header style={{display:'none'}}>
-        <span style={{marginRight:16,display:'flex',alignItems:'center'}}>
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="star-gradient-premium" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#F27AFF"/>
-                <stop offset="0.5" stopColor="#7CD6FF"/>
-                <stop offset="1" stopColor="#7C5CFF"/>
-              </linearGradient>
-            </defs>
-            <path d="M24 4c2.5 3.5 4.6 8.6 5.1 13.3H43c-2.3 2.1-6.6 5.2-10.5 8.4L36.2 40 24 31.3 11.8 40l3.7-14.4C11.6 22.5 7.3 19.4 5 17.3h13.9C19.4 12.6 21.5 7.5 24 4z" fill="url(#star-gradient-premium)"/>
-            <g>
-              <circle cx="10" cy="10" r="2" fill="#7CD6FF"/>
-              <circle cx="38" cy="10" r="1.5" fill="#F27AFF"/>
-              <circle cx="14" cy="38" r="1.2" fill="#7C5CFF"/>
-              <circle cx="40" cy="36" r="1.7" fill="#7CD6FF"/>
-              <circle cx="24" cy="44" r="1.3" fill="#F27AFF"/>
-              <circle cx="8" cy="28" r="1" fill="#7C5CFF"/>
-            </g>
-          </svg>
-        </span>
-        <h1 style={{color:'#fff',fontWeight:700,letterSpacing:2,textShadow:'0 2px 12px #7C5CFF'}}>STARs Lottery</h1>
-      </header>
-      <div className="container py-4" style={{background:'rgba(255,255,255,0.97)',borderRadius:24,boxShadow:'0 8px 32px #0002',transition:'box-shadow 0.4s'}}>
-        <h2 className="mb-4" style={{color:'#0d47a1'}}>Лотереи</h2>
+
         <div className="row">
           <div className="col-md-7">
             <h4>Активные</h4>
@@ -525,12 +516,12 @@ const fetchTickets = async (lotteryId:string) => {
             </div>
           ))}
         </div>
+
         {buyStatus.status !== 'idle' && (
           <div className={`alert alert-${buyStatus.status === 'success' ? 'success' : 'danger'}`}>
             {buyStatus.message}
           </div>
         )}
-      </div>
     </div>
   );
 }
