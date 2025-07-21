@@ -62,7 +62,7 @@ const LotteryCard: React.FC<LotteryCardProps> = ({
 
       <div className="meta-row">
         <span>Цена билета: <b>{ticketPrice}</b> ⭐</span>
-        <span>Участников: <b>{participants}</b></span>
+        <span>Участников: <b>{participants ?? 0}</b></span>
       </div>
 
       <div className="meta-row">

@@ -14,6 +14,7 @@ interface Lottery {
   end_date: string;
   max_tickets: number;
   tickets_sold: number;
+  participants: number;
   prize_pool: number;
   image_url: string;
   ticket_price_currency: string;

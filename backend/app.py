@@ -78,6 +78,7 @@ class LotteryOut(BaseModel):
     ticket_price: int
     max_tickets: int
     tickets_sold: int
+    participants: int
     winner_id: int | None = None
     winner_username: str | None = None
     winner_first_name: str | None = None
