@@ -340,7 +340,7 @@ const fetchTickets = async (lotteryId:string) => {
         (window as any).TonConnect?.connect&& (window as any).TonConnect.connect();
       }}
       onTopUpStars={()=>{
-        window.open('https://t.me/wallet', '_blank');
+        (window as any).Telegram?.WebApp?.openTelegramLink?.('https://t.me/PremiumBot');
       }}
     />
   );
@@ -368,7 +368,7 @@ const fetchTickets = async (lotteryId:string) => {
     ticketsSold:lot.tickets_sold,
     maxTickets:lot.max_tickets,
     ticketPrice:lot.ticket_price,
-    participants:(lot as any).participants ?? lot.tickets_sold,
+    participants: (lot as any).participants,
     endDate:lot.end_date,
     randomLink:lot.random_link||undefined,
     onBuy:()=>handleLotterySelect(lot.id),
