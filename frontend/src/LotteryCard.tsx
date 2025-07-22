@@ -58,6 +58,13 @@ const LotteryCard: React.FC<LotteryCardProps> = ({
         <span className="fund-value">{prizePoolStars} ⭐{tonEquivalent && `  (${tonEquivalent} TON)`}</span>
       </div>
 
+      {(createdAt || finishedAt) && (
+         <div className="meta-row">
+           {createdAt && (<span>Начало: <b>{new Date(createdAt).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })}</b></span>)}
+           {finishedAt && (<span style={{ marginLeft: 8 }}>Конец: <b>{new Date(finishedAt).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })}</b></span>)}
+         </div>
+       )}
+
       <div className="progress-row">
         Продано билетов
         <div className="progress-bar"><div style={{width:`${percent}%`}}></div></div>
