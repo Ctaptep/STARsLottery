@@ -96,9 +96,26 @@ def get_lotteries(db: Session = Depends(get_db)):
     # Если нет ни одной лотереи, создать дефолтную
     # Создать дефолтную лотерею, если её совсем нет или все предыдущие уже завершены
     active_exists = any(l.winner_id is None for l in lts)
+    import re, uuid
+    def _gen_code():
+        return uuid.uuid4().hex[:8].upper()
+
+        # determine next sequential number for auto lottery naming
+    next_num = 1
+    pattern = re.compile(r"Лотерея #(?P<num>\d+)")
+    for lt in lts:
+        m = pattern.match(lt.name)
+        if m:
+            try:
+                n=int(m.group('num'))
+                if n>=next_num:
+                    next_num=n+1
+            except:
+                pass
+
     if not lts or not active_exists:
         obj = Lottery(
-            name="Лотерея #1",
+            name=f"Лотерея #{next_num}",
             ticket_price=1,
             max_tickets=100,
             tickets_sold=0
@@ -110,8 +127,14 @@ def get_lotteries(db: Session = Depends(get_db)):
             lts = [obj]
         else:
             lts.append(obj)
+    # separate finished and active
+    finished = [l for l in lts if l.winner_id]
+    active = [l for l in lts if not l.winner_id]
+    finished.sort(key=lambda x: x.finished_at or x.id, reverse=True)
+    ordered = active + finished
+
     result = []
-    for l in lts:
+    for l in ordered:
         winner_ticket = None
         if l.winner_id:
             winner_ticket = db.query(Ticket).filter_by(lottery_id=l.id, user_id=l.winner_id, ticket_number=l.winner_ticket_number).first()
@@ -127,7 +150,10 @@ def get_lotteries(db: Session = Depends(get_db)):
             "winner_first_name": winner_ticket.first_name if winner_ticket else None,
             "winner_last_name": winner_ticket.last_name if winner_ticket else None,
             "winner_ticket_number": l.winner_ticket_number,
-            "random_link": l.random_link
+            "random_link": l.random_link,
+            "code": l.code,
+            "created_at": l.created_at.isoformat() if l.created_at else None,
+            "finished_at": l.finished_at.isoformat() if l.finished_at else None
         })
     return result
 
@@ -252,6 +278,28 @@ def user_balance(user_id: int, db: Session = Depends(get_db)):
     # stars_balance could be a column later; return 0 for now
     balance = getattr(user, "stars_balance", 0) or 0
     return {"stars_balance": balance}
+
+from datetime import datetime
+
+# -------------------- Lottery admin endpoints --------------------
+
+class FinishLotteryReq(BaseModel):
+    winner_id: int
+    winner_ticket_number: int
+
+@app.post("/lotteries/{lottery_id}/finish")
+def finish_lottery(lottery_id: int, data: FinishLotteryReq, db: Session = Depends(get_db)):
+    """Manually finish a lottery, set winner and finish timestamp."""
+    lot = db.query(Lottery).filter(Lottery.id == lottery_id).first()
+    if not lot:
+        raise HTTPException(404, detail="Lottery not found")
+    if lot.winner_id:
+        raise HTTPException(400, detail="Already finished")
+    lot.winner_id = data.winner_id
+    lot.winner_ticket_number = data.winner_ticket_number
+    lot.finished_at = datetime.utcnow()
+    db.commit()
+    return {"ok": True}
 
 # -------------------- Existing endpoints --------------------
 

@@ -27,6 +27,9 @@ class Lottery(Base):
     ticket_price = Column(Integer, nullable=False)
     max_tickets = Column(Integer, nullable=False)
     tickets_sold = Column(Integer, default=0)
+    code = Column(String, nullable=True, unique=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    finished_at = Column(DateTime(timezone=True), nullable=True)
     winner_id = Column(Integer, nullable=True)
     winner_ticket_number = Column(Integer, nullable=True)
     random_link = Column(String, nullable=True)
@@ -50,6 +53,13 @@ def auto_migrate_tickets_table():
     import sqlite3
     conn = sqlite3.connect("lottery.db")
     cur = conn.cursor()
+    # Lotteries
+    cur.execute("PRAGMA table_info(lotteries);")
+    lot_cols = [row[1] for row in cur.fetchall()]
+    for col_def in [("code", "TEXT"), ("created_at", "DATETIME"), ("finished_at", "DATETIME")]:
+        if col_def[0] not in lot_cols:
+            cur.execute(f"ALTER TABLE lotteries ADD COLUMN {col_def[0]} {col_def[1]};")
+
     # Tickets
     cur.execute("PRAGMA table_info(tickets);")
     cols = [row[1] for row in cur.fetchall()]
