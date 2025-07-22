@@ -16,6 +16,19 @@ from fastapi import Body
 
 app = FastAPI()
 
+# --- Startup hook to fill missing dates ---
+@app.on_event("startup")
+def _ensure_dates():
+    db = SessionLocal()
+    try:
+        # created_at null -> now
+        db.query(Lottery).filter(Lottery.created_at == None).update({Lottery.created_at: func.now()})
+        # finished_at for finished lotteries
+        db.query(Lottery).filter(Lottery.winner_id != None, Lottery.finished_at == None).update({Lottery.finished_at: func.now()})
+        db.commit()
+    finally:
+        db.close()
+
 # ---- Simple in-memory cache for TON/star rate ----
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "changeme")
 
@@ -122,7 +135,8 @@ def get_lotteries(db: Session = Depends(get_db)):
             name=f"Лотерея #{next_num}",
             ticket_price=1,
             max_tickets=100,
-            tickets_sold=0
+            tickets_sold=0,
+            created_at=datetime.utcnow()
         )
         db.add(obj)
         db.commit()
