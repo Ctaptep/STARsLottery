@@ -3,6 +3,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy import func
 from pydantic import BaseModel
+from datetime import datetime
 import os, hashlib, hmac
 from dotenv import load_dotenv
 from db import SessionLocal, init_db, Lottery, Ticket, User, Setting
