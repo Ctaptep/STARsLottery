@@ -46,6 +46,13 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
+interface UserTicket {
+  id:number;
+  lottery_id:number;
+  user_id:number;
+  ticket_number:number;
+}
+
 const getApiUrl = () => {
   return import.meta.env.VITE_API_URL || 'https://starslottery-backend-production.up.railway.app';
 }
@@ -55,6 +62,7 @@ export const LotteriesPage: React.FC<{ userId: string }> = ({ userId }) => {
   const [error, setError] = useState<string | null>(null);
   const [lotteries, setLotteries] = useState<Lottery[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
+  const [myTickets,setMyTickets]=useState<UserTicket[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
   const [userWallet, setUserWallet] = useState<string | null>(null);
@@ -134,6 +142,11 @@ export const LotteriesPage: React.FC<{ userId: string }> = ({ userId }) => {
       })
       .catch(() => setError('Ошибка загрузки лотерей'))
       .finally(() => setLoading(false));
+        // load user tickets for "My" tab
+        fetch(`${getApiUrl()}/tickets?user_id=${userId}`)
+          .then(r=>r.json())
+          .then((data)=>setMyTickets(data))
+          .catch(()=>{});
     // Polling
     const poll = setInterval(async () => {
       try {
@@ -394,7 +407,7 @@ const fetchTickets = async (lotteryId:string) => {
   // Tabs arrays
   const activeLots = lotteries.filter(l=>!l.winner_id);
   const finishedLots = lotteries.filter(l=>l.winner_id);
-  const participatedLots = lotteries.filter(l=>tickets.some(t=>t.owner===tgUser.username));
+  const participatedLots = lotteries.filter(l=>myTickets.some(t=>String(t.lottery_id)===String(l.id)));
   const wonLots = lotteries.filter(l=>l.winner_id===userId);
   
   

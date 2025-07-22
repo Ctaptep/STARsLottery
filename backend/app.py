@@ -563,10 +563,12 @@ class TicketOut(BaseModel):
         orm_mode = True
 
 @app.get("/tickets", response_model=list[TicketOut])
-def list_tickets(lottery_id: int | None = None, db: Session = Depends(get_db)):
+def list_tickets(lottery_id: int | None = None, user_id: int | None = None, db: Session = Depends(get_db)):
     q = db.query(Ticket)
     if lottery_id is not None:
         q = q.filter(Ticket.lottery_id == lottery_id)
+    if user_id is not None:
+        q = q.filter(Ticket.user_id == user_id)
     return q.all()
 
 # New helper route for frontend compatibility
