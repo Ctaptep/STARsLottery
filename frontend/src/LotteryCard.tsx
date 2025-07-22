@@ -2,6 +2,8 @@ import React from 'react';
 import './lotteryCard.css';
 
 interface LotteryCardProps {
+  createdAt?: string;
+  finishedAt?: string;
   randomLink?: string;
   id: string;
   name: string;
@@ -30,6 +32,8 @@ const LotteryCard: React.FC<LotteryCardProps> = ({
   ticketPrice,
   participants,
   endDate,
+  createdAt,
+  finishedAt,
   onBuy,
   onDetails,
   status = 'active',
