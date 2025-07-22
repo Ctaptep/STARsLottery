@@ -169,7 +169,8 @@ def get_lotteries(db: Session = Depends(get_db)):
     # separate finished and active
     finished = [l for l in lts if l.winner_id]
     active = [l for l in lts if not l.winner_id]
-    finished.sort(key=lambda x: x.finished_at or x.id, reverse=True)
+    from datetime import datetime
+    finished.sort(key=lambda x: x.finished_at or datetime.min, reverse=True)
     ordered = active + finished
 
     result = []
