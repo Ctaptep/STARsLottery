@@ -17,6 +17,9 @@ from fastapi import Body
 
 app = FastAPI()
 
+# Ensure database schema is up-to-date (creates missing columns)
+init_db()
+
 # Configure CORS (allow any origin, no credentials)
 app.add_middleware(
     CORSMiddleware,
@@ -28,6 +31,7 @@ app.add_middleware(
 
 # --- Startup hook to fill missing dates ---
 @app.on_event("startup")
+
 def _ensure_dates():
     db = SessionLocal()
     try:
