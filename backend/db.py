@@ -80,6 +80,14 @@ def auto_migrate_tickets_table():
     conn.commit()
     conn.close()
 
+class Setting(Base):
+    __tablename__ = "settings"
+    key = Column(String, primary_key=True, index=True)
+    value = Column(String)
+
+    def __repr__(self):
+        return f"<Setting {self.key}={self.value}>"
+
 class PaymentLog(Base):
     __tablename__ = "payment_logs"
     id = Column(Integer, primary_key=True, index=True)

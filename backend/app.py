@@ -5,7 +5,7 @@ from sqlalchemy import func
 from pydantic import BaseModel
 import os, hashlib, hmac
 from dotenv import load_dotenv
-from db import SessionLocal, init_db, Lottery, Ticket, User
+from db import SessionLocal, init_db, Lottery, Ticket, User, Setting
 from sqlalchemy.orm import Session
 from fastapi import Depends
 
@@ -16,6 +16,8 @@ from fastapi import Body
 app = FastAPI()
 
 # ---- Simple in-memory cache for TON/star rate ----
+ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "changeme")
+
 _rate_cache = {
     "value": None,
     "ts": 0
@@ -160,8 +162,42 @@ class WalletUpdateRequest(BaseModel):
 
 # -------------------- Utility endpoints --------------------
 
+def _get_star_usd(db: Session):
+    rec = db.query(Setting).filter_by(key="STAR_USD_PRICE").first()
+    if rec:
+        try:
+            return float(rec.value)
+        except ValueError:
+            pass
+    return float(os.getenv("STAR_USD_PRICE", "0.0223"))
+
+@app.get("/admin/star_price")
+def admin_get_star_price(token: str, db: Session = Depends(get_db)):
+    if token != ADMIN_TOKEN:
+        raise HTTPException(status_code=401, detail="unauthorized")
+    return {"star_usd_price": _get_star_usd(db)}
+
+class StarPriceUpdate(BaseModel):
+    price: float
+
+@app.post("/admin/star_price")
+def admin_set_star_price(token: str, data: StarPriceUpdate, db: Session = Depends(get_db)):
+    if token != ADMIN_TOKEN:
+        raise HTTPException(status_code=401, detail="unauthorized")
+    rec = db.query(Setting).filter_by(key="STAR_USD_PRICE").first()
+    if not rec:
+        rec = Setting(key="STAR_USD_PRICE", value=str(data.price))
+        db.add(rec)
+    else:
+        rec.value = str(data.price)
+    db.commit()
+    # clear cache
+    _rate_cache.update({"value": None, "ts": 0})
+    return {"ok": True, "star_usd_price": data.price}
+
+
 @app.get("/rates/ton_star")
-def get_ton_star_rate():
+def get_ton_star_rate(db: Session = Depends(get_db)):
     """Return current conversion: how many ⭐ in 1 TON."""
     import time, requests
     now = time.time()
@@ -174,7 +210,7 @@ def get_ton_star_rate():
         data = resp.json()
         ton_usd = data.get("the-open-network", {}).get("usd")
         # Suppose 1 STAR = 0.04 USD (=> 1 TON ≈ 25⭐ when TON≈1 USD)
-        star_usd = float(os.getenv("STAR_USD_PRICE", "0.02"))
+        star_usd = _get_star_usd(db)
         if ton_usd:
             ton_to_star = round(ton_usd / star_usd, 2)
     except Exception as ex:
@@ -182,6 +218,23 @@ def get_ton_star_rate():
         ton_to_star = 25.0
     _rate_cache.update({"value": ton_to_star, "ts": now})
     return {"ton_to_star": ton_to_star, "cached": False}
+
+
+# ---- Wallet balance endpoint ----
+@app.get("/wallet_balance/{address}")
+def get_wallet_balance(address: str):
+    """Return wallet balance in TON (approx). Uses tonapi.io."""
+    import requests, math
+    try:
+        resp = requests.get(f"https://tonapi.io/v2/accounts/{address}")
+        data = resp.json()
+        balance_nano = int(data.get("balance", 0))
+        balance_ton = round(balance_nano / 1e9, 3)
+        return {"address": address, "balance_ton": balance_ton}
+    except Exception as ex:
+        print("wallet balance error", ex)
+        return {"address": address, "balance_ton": None}
+
 
 @app.get("/users/{user_id}/stats")
 def user_stats(user_id: int, db: Session = Depends(get_db)):

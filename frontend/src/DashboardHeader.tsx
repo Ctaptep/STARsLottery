@@ -14,6 +14,7 @@ interface Props {
   starsBalance: number | null; // null = not connected wallet
   tonToStarRate: number | null; // null = loading
   walletAddress: string | null;
+  walletBalanceTon: number | null;
   onConnectWallet: () => void;
   onTopUpStars: () => void;
 }
@@ -25,6 +26,7 @@ const DashboardHeader: React.FC<Props> = ({
   starsBalance,
   tonToStarRate,
   walletAddress,
+  walletBalanceTon,
   onConnectWallet,
   onTopUpStars,
 }) => {
@@ -38,7 +40,7 @@ const DashboardHeader: React.FC<Props> = ({
     }
     return (
       <div className="wallet-connected">
-        <span className="wallet-address">{walletAddress.slice(0, 6)}…{walletAddress.slice(-4)}</span>
+        <span className="wallet-address">Адрес: {walletAddress.slice(0,6)}…{walletAddress.slice(-4)} | Баланс: {walletBalanceTon!==null?walletBalanceTon+' TON':'...'}</span>
       </div>
     );
   };

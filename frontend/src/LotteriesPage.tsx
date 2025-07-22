@@ -57,6 +57,7 @@ export const LotteriesPage: React.FC<{ userId: string }> = ({ userId }) => {
   const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
   const [userWallet, setUserWallet] = useState<string | null>(null);
   const [walletLoading, setWalletLoading] = useState<boolean>(false);
+  const [walletBalanceTon, setWalletBalanceTon] = useState<number|null>(null);
   const [tab,setTab]=useState<'active'|'finished'|'my'>('active');
   const [details,setDetails]=useState<Lottery|null>(null);
   const [stats, setStats] = useState<{wins:number;tickets:number;active_lotteries:number}>({wins:0,tickets:0,active_lotteries:0});
@@ -67,6 +68,13 @@ export const LotteriesPage: React.FC<{ userId: string }> = ({ userId }) => {
   const [showWalletLink, setShowWalletLink] = useState<boolean>(false);
 
   const wallet = useTonWallet();
+
+  const loadWalletBalance = useCallback((addr:string)=>{
+    fetch(`${getApiUrl()}/wallet_balance/${addr}`)
+      .then(r=>r.json())
+      .then(res=>setWalletBalanceTon(res.balance_ton))
+      .catch(()=>setWalletBalanceTon(null));
+  },[]);
 
   useEffect(() => {
     const updateUserWallet = async (address: string) => {
@@ -79,6 +87,7 @@ export const LotteriesPage: React.FC<{ userId: string }> = ({ userId }) => {
           });
           console.log('Wallet address updated on backend:', address);
           setUserWallet(address);
+          loadWalletBalance(address);
         } catch (error) {
           console.error('Failed to update wallet address on backend', error);
         }
@@ -98,6 +107,7 @@ export const LotteriesPage: React.FC<{ userId: string }> = ({ userId }) => {
       .then(r => r.json())
       .then(user => {
         setUserWallet(user.ton_wallet_address || null);
+        if(user.ton_wallet_address){loadWalletBalance(user.ton_wallet_address);}
         setWalletInput(user.ton_wallet_address || "");
         setWalletLoading(false);
       })
@@ -337,6 +347,7 @@ const fetchTickets = async (lotteryId:string) => {
       starsBalance={starsBalance}
       tonToStarRate={tonRate}
       walletAddress={userWallet}
+      walletBalanceTon={walletBalanceTon}
       onConnectWallet={()=>{
         (window as any).TonConnect?.connect&& (window as any).TonConnect.connect();
       }}
