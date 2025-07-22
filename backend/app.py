@@ -87,6 +87,9 @@ class LotteryOut(BaseModel):
     winner_last_name: str | None = None
     winner_ticket_number: int | None = None
     random_link: str | None = None
+    code: str | None = None
+    created_at: datetime | None = None
+    finished_at: datetime | None = None
     class Config:
         orm_mode = True
 
