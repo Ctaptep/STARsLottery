@@ -23,8 +23,8 @@ interface Lottery {
   winner_first_name?: string | null;
   winner_ticket_number?: number | null;
   random_link?: string | null;
-  created_at?: string;
-  finished_at?: string;
+  created_at?: string | null;
+  finished_at?: string | null;
 }
 
 interface Ticket {
@@ -384,9 +384,9 @@ const fetchTickets = async (lotteryId:string) => {
     ticketPrice:lot.ticket_price,
     participants: (lot as any).participants,
     endDate:lot.end_date,
-    randomLink:lot.random_link||undefined,
-    createdAt: lot.created_at,
-    finishedAt: lot.finished_at,
+    randomLink: lot.random_link || undefined,
+    createdAt: lot.created_at || undefined,
+    finishedAt: lot.finished_at || undefined,
     onBuy:()=>handleLotterySelect(lot.id),
     onDetails:()=>setDetails(lot)
   });
