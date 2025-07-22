@@ -483,7 +483,8 @@ def choose_winner(lottery_id: int, db: Session, force: bool=False):
 
     lottery.winner_id=winner_ticket.user_id
     lottery.winner_ticket_number=random_number
-    lottery.random_link=verify_url
+    lottery.finished_at = datetime.utcnow()
+    lottery.random_link = verify_url
     db.add(lottery)
     db.commit()
 
