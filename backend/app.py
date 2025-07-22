@@ -16,6 +16,15 @@ from fastapi import Body
 
 app = FastAPI()
 
+# Configure CORS (allow any origin, no credentials)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=False,
+)
+
 # --- Startup hook to fill missing dates ---
 @app.on_event("startup")
 def _ensure_dates():
