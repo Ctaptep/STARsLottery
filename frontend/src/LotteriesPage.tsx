@@ -142,17 +142,27 @@ export const LotteriesPage: React.FC<{ userId: string }> = ({ userId }) => {
       })
       .catch(() => setError('Ошибка загрузки лотерей'))
       .finally(() => setLoading(false));
-        // load user tickets for "My" tab
-        fetch(`${getApiUrl()}/tickets?user_id=${userId}`)
-          .then(r=>r.json())
-          .then((data)=>setMyTickets(data))
-          .catch(()=>{});
+        // helper to load user tickets
+        const fetchMyTickets = async () => {
+          try {
+            const res = await fetch(`${getApiUrl()}/tickets?user_id=${userId}`);
+            if(res.ok){
+              setMyTickets(await res.json());
+            }
+          }catch{}
+        };
+        fetchMyTickets();
     // Polling
     const poll = setInterval(async () => {
       try {
         const res = await fetch(`${getApiUrl()}/lotteries`);
         if (!res.ok) throw new Error('Failed to load lotteries');
         setLotteries(await res.json());
+        // refresh my tickets as well
+        try{
+          const tRes=await fetch(`${getApiUrl()}/tickets?user_id=${userId}`);
+          if(tRes.ok) setMyTickets(await tRes.json());
+        }catch{}
         if (selected) await fetchTickets(selected);
       } catch (err) {
         console.error('Error loading lotteries:', err);
