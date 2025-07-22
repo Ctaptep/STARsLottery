@@ -20,6 +20,13 @@ app = FastAPI()
 # Ensure database schema is up-to-date (creates missing columns)
 init_db()
 
+# --- auto-fill timestamps ---------------------------------------------------
+from sqlalchemy import event
+@event.listens_for(Lottery, 'before_insert')
+def _lottery_before_insert(mapper, connection, target):
+    if not target.created_at:
+        target.created_at = datetime.utcnow()
+
 # Configure CORS (allow any origin, no credentials)
 app.add_middleware(
     CORSMiddleware,
