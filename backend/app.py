@@ -3,6 +3,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy import func
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 import os, hashlib, hmac
 from dotenv import load_dotenv
