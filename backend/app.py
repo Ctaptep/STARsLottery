@@ -31,9 +31,9 @@ def _ensure_dates():
     db = SessionLocal()
     try:
         # created_at null -> now
-        db.query(Lottery).filter(Lottery.created_at == None).update({Lottery.created_at: func.now()})
+        db.query(Lottery).filter(Lottery.created_at == None).update({Lottery.created_at: func.now()}, synchronize_session=False)
         # finished_at for finished lotteries
-        db.query(Lottery).filter(Lottery.winner_id != None, Lottery.finished_at == None).update({Lottery.finished_at: func.now()})
+        db.query(Lottery).filter(Lottery.winner_id != None, Lottery.finished_at == None).update({Lottery.finished_at: func.now()}, synchronize_session=False)
         db.commit()
     finally:
         db.close()
